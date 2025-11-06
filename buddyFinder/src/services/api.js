@@ -32,7 +32,7 @@
 // services/api.js
 import axios from 'axios';
 
-const USE_MOCK = true; // Set thành false khi có backend thật
+const USE_MOCK = false;
 
 const api = axios.create({
   baseURL: 'http://localhost:8080/api',
@@ -212,4 +212,27 @@ export const submitRating = (data) => {
     return Promise.resolve({ data: { message: 'Rating submitted!' } });
   }
   return api.post('/ratings', data);
+};
+
+export const likeUser = (toUserId) => {
+  if (USE_MOCK) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const isMatch = Math.random() > 0.7; // 30% chance match
+        resolve({ 
+          data: { 
+            message: isMatch ? "It's a match! 🎉" : "Like sent!"
+          } 
+        });
+      }, 500);
+    });
+  }
+  return api.post('/matches/like', { toUserId });
+};
+
+export const passUser = (toUserId) => {
+  if (USE_MOCK) {
+    return Promise.resolve({ data: { message: 'Passed' } });
+  }
+  return api.post('/matches/pass', { toUserId });
 };
