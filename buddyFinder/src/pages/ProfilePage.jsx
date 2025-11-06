@@ -14,7 +14,7 @@ function ProfilePage() {
 
   useEffect(() => {
     fetchProfile();
-  }, []);
+  }, []); // ✅ Only fetch once on mount
 
   const fetchProfile = async () => {
     try {
@@ -28,12 +28,18 @@ function ProfilePage() {
     }
   };
 
+  // FIX: This callback should only update local profile state
+  // PhotoUpload component now manages its own photos independently
   const handlePhotoUploaded = (newPhotos) => {
-    console.log('✅ Photos updated:', newPhotos);
-    setProfile(prev => ({ 
-      ...prev, 
-      photos: typeof newPhotos === 'string' ? newPhotos : JSON.stringify(newPhotos)
-    }));
+    console.log('✅ Photos updated callback:', newPhotos);
+    // Update local profile state for consistency
+    setProfile(prev => {
+      if (!prev) return prev;
+      return { 
+        ...prev, 
+        photos: typeof newPhotos === 'string' ? newPhotos : JSON.stringify(newPhotos)
+      };
+    });
   };
 
   if (loading) {
@@ -52,6 +58,7 @@ function ProfilePage() {
             <ProfileCard />
             
             <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-3xl p-6">
+              {/* FIX: Pass user.userId to ensure PhotoUpload fetches correct user's photos */}
               <PhotoUpload
                 userId={user?.userId}
                 currentPhotos={profile?.photos ? parsePhotos(profile.photos) : []}
