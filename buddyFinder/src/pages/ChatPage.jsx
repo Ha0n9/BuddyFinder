@@ -17,17 +17,10 @@ function ChatPage() {
     setLoading(true);
     try {
       const response = await getMatches();
+      setMatches(response.data);
       
-      // Transform matches to include matchId
-      const transformedMatches = response.data.map(match => ({
-        ...match,
-        matchId: match.userId, // Use userId as matchId for now
-      }));
-      
-      setMatches(transformedMatches);
-      
-      if (transformedMatches.length > 0) {
-        setSelectedMatch(transformedMatches[0]);
+      if (response.data.length > 0) {
+        setSelectedMatch(response.data[0]);
       }
     } catch (error) {
       console.error('Failed to fetch matches:', error);
@@ -64,16 +57,15 @@ function ChatPage() {
         <h1 className="text-3xl font-bold text-white mb-8 text-center">Messages</h1>
         
         <div className="grid md:grid-cols-3 gap-6 h-full">
-          {/* Matches List */}
           <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-3xl p-6 overflow-hidden flex flex-col">
             <h2 className="text-xl font-bold text-white mb-4">Your Matches</h2>
             <div className="flex-1 overflow-y-auto space-y-2">
               {matches.map((match) => (
                 <button
-                  key={match.userId}
+                  key={match.matchId}
                   onClick={() => setSelectedMatch(match)}
                   className={`w-full text-left p-4 rounded-xl transition-all ${
-                    selectedMatch?.userId === match.userId
+                    selectedMatch?.matchId === match.matchId
                       ? 'bg-white bg-opacity-30'
                       : 'bg-white bg-opacity-10 hover:bg-opacity-20'
                   }`}
@@ -94,7 +86,6 @@ function ChatPage() {
             </div>
           </div>
 
-          {/* Chat Window */}
           <div className="md:col-span-2 h-full">
             {selectedMatch ? (
               <ChatWindow match={selectedMatch} />
