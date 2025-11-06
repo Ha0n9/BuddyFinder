@@ -13,6 +13,7 @@ const schema = yup.object({
 
 function LoginForm() {
   const { setUser } = useAuthStore();
+  const navigate = useNavigate();
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
   });

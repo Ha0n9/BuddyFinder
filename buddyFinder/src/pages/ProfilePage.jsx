@@ -1,15 +1,67 @@
+// src/pages/ProfilePage.jsx
+import { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import ProfileCard from '../components/profile/ProfileCard';
 import ProfileEdit from '../components/profile/ProfileEdit';
+import PhotoUpload from '../components/profile/PhotoUpload';
+import { getUserProfile } from '../services/api';
+import { useAuthStore } from '../store/authStore';
 
 function ProfilePage() {
+  const { user } = useAuthStore();
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const response = await getUserProfile();
+      setProfile(response.data);
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePhotoUploaded = (newPhotos) => {
+    setProfile(prev => ({ ...prev, photos: JSON.stringify(newPhotos) }));
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-pink-500"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4 text-center">Your Profile</h1>
-      <Routes>
-        <Route path="/" element={<ProfileCard />} />
-        <Route path="edit" element={<ProfileEdit />} />
-      </Routes>
+    <div className="min-h-screen bg-gradient-to-br from-pink-400 via-purple-500 to-orange-400 py-12 px-4">
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-3xl p-8">
+          <h1 className="text-3xl font-bold text-white mb-8 text-center">Your Profile</h1>
+          
+          <Routes>
+            <Route path="/" element={
+              <>
+                <ProfileCard />
+                <div className="mt-8">
+                  <PhotoUpload
+                    userId={user?.userId}
+                    currentPhotos={profile?.photos ? JSON.parse(profile.photos) : []}
+                    onPhotoUploaded={handlePhotoUploaded}
+                  />
+                </div>
+              </>
+            } />
+            <Route path="edit" element={<ProfileEdit />} />
+          </Routes>
+        </div>
+      </div>
     </div>
   );
 }
