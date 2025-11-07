@@ -1,48 +1,71 @@
-// src/stores/chatStore.js
 import { create } from 'zustand';
-import io from 'socket.io-client';
+import { Client } from '@stomp/stompjs';
 
 export const useChatStore = create((set, get) => ({
-  socket: null,
+  stompClient: null,
   messages: {},
-  unreadCount: {},
+  connected: false,
 
-  connectSocket: (matchId) => {
-    const socket = io('http://localhost:8080', {
-      path: '/ws',
-      transports: ['websocket', 'polling']
+  connect: (matchId, userId) => {
+    const client = new Client({
+      brokerURL: 'ws://localhost:8080/ws',
+      reconnectDelay: 5000,
+      debug: (str) => {
+        console.log('STOMP: ' + str);
+      },
     });
 
-    socket.on('connect', () => {
-      console.log('✅ Connected to WebSocket');
-      socket.emit('join', `match-${matchId}`);
-    });
+    client.onConnect = () => {
+      console.log('✅ WebSocket Connected');
+      set({ connected: true, stompClient: client });
 
-    socket.on(`match-${matchId}`, (message) => {
-      const currentMessages = get().messages[matchId] || [];
-      set({
-        messages: {
-          ...get().messages,
-          [matchId]: [...currentMessages, message]
-        }
+      client.subscribe(`/topic/match/${matchId}`, (message) => {
+        const chatMessage = JSON.parse(message.body);
+        const currentMessages = get().messages[matchId] || [];
+        set({
+          messages: {
+            ...get().messages,
+            [matchId]: [...currentMessages, chatMessage]
+          }
+        });
       });
-    });
+    };
 
-    set({ socket });
+    client.onStompError = (frame) => {
+      console.error('❌ STOMP error:', frame);
+    };
+
+    client.onWebSocketClose = (evt) => {
+      console.log('WebSocket closed:', evt);
+    };
+
+    client.activate();
   },
 
-  sendMessage: (matchId, content) => {
-    const { socket } = get();
-    if (socket) {
-      socket.emit('chat', { matchId, content });
+  sendMessage: (matchId, senderId, content) => {
+    const { stompClient } = get();
+    if (stompClient?.connected) {
+      stompClient.publish({
+        destination: `/app/chat/${matchId}`,
+        body: JSON.stringify({ senderId, content })
+      });
     }
   },
 
   disconnect: () => {
-    const { socket } = get();
-    if (socket) {
-      socket.disconnect();
-      set({ socket: null });
+    const { stompClient } = get();
+    if (stompClient) {
+      stompClient.deactivate();
+      set({ connected: false, stompClient: null });
     }
+  },
+
+  setMessages: (matchId, messages) => {
+    set({
+      messages: {
+        ...get().messages,
+        [matchId]: messages
+      }
+    });
   }
 }));

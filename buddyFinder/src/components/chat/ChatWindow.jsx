@@ -2,8 +2,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuthStore } from '../../store/authStore';
 import { getMessages, sendMessage } from '../../services/api';
+import websocketService from '../../services/websocket';
 import MessageBubble from './MessageBubble';
-import Button from '../common/Button';
 import { Send } from 'lucide-react';
 
 function ChatWindow({ match }) {
@@ -11,25 +11,48 @@ function ChatWindow({ match }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
+  const [connected, setConnected] = useState(false);
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
     if (match?.matchId) {
-      fetchMessages();
+      initializeChat();
     }
+
+    return () => {
+      if (match?.matchId) {
+        websocketService.unsubscribeFromMatch(match.matchId);
+      }
+    };
   }, [match]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const fetchMessages = async () => {
+  const initializeChat = async () => {
     setLoading(true);
+    
     try {
+      // 1. Fetch existing messages
       const response = await getMessages(match.matchId);
       setMessages(response.data);
+
+      // 2. Connect WebSocket
+      const token = localStorage.getItem('token');
+      if (!websocketService.client?.connected) {
+        await websocketService.connect(token);
+      }
+      
+      // 3. Subscribe to this match's messages
+      websocketService.subscribeToMatch(match.matchId, (newMessage) => {
+        console.log('📩 New message received:', newMessage);
+        setMessages(prev => [...prev, newMessage]);
+      });
+
+      setConnected(true);
     } catch (error) {
-      console.error('Failed to fetch messages:', error);
+      console.error('Failed to initialize chat:', error);
     } finally {
       setLoading(false);
     }
@@ -42,18 +65,23 @@ function ChatWindow({ match }) {
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    const messageData = {
-      matchId: match.matchId,
-      content: input.trim(),
-    };
+    const content = input.trim();
+    setInput('');
 
     try {
-      const response = await sendMessage(messageData);
-      setMessages((prev) => [...prev, response.data]);
-      setInput('');
+      // Send via REST API (persists to DB)
+      const response = await sendMessage({
+        matchId: match.matchId,
+        content
+      });
+
+      // WebSocket will broadcast and update UI automatically
+      // No need to manually add to messages array
+      
     } catch (error) {
       console.error('Failed to send message:', error);
       alert('Failed to send message');
+      setInput(content); // Restore input on error
     }
   };
 
@@ -75,11 +103,14 @@ function ChatWindow({ match }) {
   return (
     <div className="h-full flex flex-col bg-white bg-opacity-20 backdrop-blur-sm rounded-3xl">
       {/* Header */}
-      <div className="p-4 border-b border-white border-opacity-30">
-        <h3 className="text-xl font-bold text-white">
-          {match.name}
-        </h3>
-        <p className="text-white text-sm opacity-70">{match.location}</p>
+      <div className="p-4 border-b border-white border-opacity-30 flex items-center justify-between">
+        <div>
+          <h3 className="text-xl font-bold text-white">{match.name}</h3>
+          <p className="text-white text-sm opacity-70">{match.location}</p>
+        </div>
+        {/* Connection status */}
+        <div className={`w-2 h-2 rounded-full ${connected ? 'bg-green-400' : 'bg-red-400'}`} 
+             title={connected ? 'Connected' : 'Disconnected'} />
       </div>
 
       {/* Messages */}
@@ -108,12 +139,13 @@ function ChatWindow({ match }) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            className="flex-1 p-3 rounded-xl bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
-            placeholder="Type a message..."
+            disabled={!connected}
+            className="flex-1 p-3 rounded-xl bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white disabled:opacity-50"
+            placeholder={connected ? "Type a message..." : "Connecting..."}
           />
           <button
             onClick={handleSend}
-            disabled={!input.trim()}
+            disabled={!input.trim() || !connected}
             className="p-3 bg-white text-pink-500 rounded-xl hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send className="w-6 h-6" />
