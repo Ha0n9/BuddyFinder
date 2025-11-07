@@ -1,10 +1,10 @@
-// src/components/activity/ActivityPost.jsx
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { postActivity } from '../../services/api';
 import Button from '../common/Button';
 import { useState } from 'react';
+import { showError, showSuccess } from '../../utils/toast';
 
 const schema = yup.object({
   title: yup.string().required('Title is required'),
@@ -25,12 +25,12 @@ function ActivityPost({ onActivityPosted }) {
     setSubmitting(true);
     try {
       await postActivity(data);
-      alert('Activity posted successfully!');
+      showSuccess('Activity posted successfully!');
       reset();
       if (onActivityPosted) onActivityPosted();
     } catch (error) {
       console.error('Activity posting failed:', error);
-      alert('Failed to post activity: ' + (error.response?.data?.message || error.message));
+      showError(error.response?.data?.message || 'Failed to post activity');
     } finally {
       setSubmitting(false);
     }
@@ -47,6 +47,7 @@ function ActivityPost({ onActivityPosted }) {
           className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
           type="text"
           placeholder="Morning Run"
+          disabled={submitting}
         />
         {errors.title && <p className="text-red-200 text-sm mt-1">{errors.title.message}</p>}
       </div>
@@ -58,6 +59,7 @@ function ActivityPost({ onActivityPosted }) {
           className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
           rows="3"
           placeholder="5km run through Stanley Park"
+          disabled={submitting}
         />
         {errors.description && <p className="text-red-200 text-sm mt-1">{errors.description.message}</p>}
       </div>
@@ -69,6 +71,7 @@ function ActivityPost({ onActivityPosted }) {
           className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
           type="text"
           placeholder="Stanley Park, Vancouver"
+          disabled={submitting}
         />
         {errors.location && <p className="text-red-200 text-sm mt-1">{errors.location.message}</p>}
       </div>
@@ -79,6 +82,7 @@ function ActivityPost({ onActivityPosted }) {
           {...register('scheduledTime')}
           className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
           type="datetime-local"
+          disabled={submitting}
         />
         {errors.scheduledTime && <p className="text-red-200 text-sm mt-1">{errors.scheduledTime.message}</p>}
       </div>
@@ -91,6 +95,7 @@ function ActivityPost({ onActivityPosted }) {
           type="number"
           min="2"
           placeholder="5"
+          disabled={submitting}
         />
         {errors.maxParticipants && <p className="text-red-200 text-sm mt-1">{errors.maxParticipants.message}</p>}
       </div>
@@ -100,6 +105,7 @@ function ActivityPost({ onActivityPosted }) {
         <select
           {...register('difficultyLevel')}
           className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
+          disabled={submitting}
         >
           <option value="" className="text-gray-800">Select difficulty</option>
           <option value="Beginner" className="text-gray-800">Beginner</option>

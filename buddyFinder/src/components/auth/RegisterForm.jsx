@@ -2,8 +2,11 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { useAuthStore } from '../../store/authStore';
-import { register } from '../../services/api';
+import { register as registerApi } from '../../services/api';
 import Button from '../common/Button';
+import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { showError, showSuccess } from '../../utils/toast';
 
 const schema = yup.object({
   name: yup.string().required('Name is required'),
@@ -17,17 +20,26 @@ const schema = yup.object({
 
 function RegisterForm() {
   const { setUser } = useAuthStore();
-  const { register: formRegister, handleSubmit, formState: { errors } } = useForm({
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  
+  const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
   });
 
   const onSubmit = async (data) => {
+    setLoading(true);
     try {
-      const response = await register(data);
+      const response = await registerApi(data);
       localStorage.setItem('token', response.data.token);
       setUser(response.data.user);
+      showSuccess('Account created successfully!');
+      navigate('/search');
     } catch (error) {
       console.error('Registration failed:', error);
+      showError(error.response?.data?.message || 'Registration failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -37,72 +49,84 @@ function RegisterForm() {
         <label htmlFor="name" className="block text-gray-700">Name</label>
         <input
           id="name"
-          {...formRegister('name')}
+          {...register('name')}
           className="w-full p-2 border rounded"
           type="text"
+          disabled={loading}
         />
-        {errors.name && <p className="text-red-500">{errors.name.message}</p>}
+        {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
       </div>
       <div>
         <label htmlFor="email" className="block text-gray-700">Email</label>
         <input
           id="email"
-          {...formRegister('email')}
+          {...register('email')}
           className="w-full p-2 border rounded"
           type="email"
+          disabled={loading}
         />
-        {errors.email && <p className="text-red-500">{errors.email.message}</p>}
+        {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
       </div>
       <div>
         <label htmlFor="password" className="block text-gray-700">Password</label>
         <input
           id="password"
-          {...formRegister('password')}
+          {...register('password')}
           className="w-full p-2 border rounded"
           type="password"
+          disabled={loading}
         />
-        {errors.password && <p className="text-red-500">{errors.password.message}</p>}
+        {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
       </div>
       <div>
         <label htmlFor="age" className="block text-gray-700">Age</label>
         <input
           id="age"
-          {...formRegister('age')}
+          {...register('age')}
           className="w-full p-2 border rounded"
           type="number"
+          disabled={loading}
         />
-        {errors.age && <p className="text-red-500">{errors.age.message}</p>}
+        {errors.age && <p className="text-red-500 text-sm mt-1">{errors.age.message}</p>}
       </div>
       <div>
         <label htmlFor="interests" className="block text-gray-700">Interests</label>
         <input
           id="interests"
-          {...formRegister('interests')}
+          {...register('interests')}
           className="w-full p-2 border rounded"
           type="text"
+          placeholder="Gym, Running, Yoga"
+          disabled={loading}
         />
-        {errors.interests && <p className="text-red-500">{errors.interests.message}</p>}
+        {errors.interests && <p className="text-red-500 text-sm mt-1">{errors.interests.message}</p>}
       </div>
       <div>
         <label htmlFor="location" className="block text-gray-700">Location</label>
         <input
           id="location"
-          {...formRegister('location')}
+          {...register('location')}
           className="w-full p-2 border rounded"
           type="text"
+          disabled={loading}
         />
-        {errors.location && <p className="text-red-500">{errors.location.message}</p>}
+        {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location.message}</p>}
       </div>
       <div>
         <label htmlFor="availability" className="block text-gray-700">Availability</label>
         <input
-          {...formRegister('availability')}
+          id="availability"
+          {...register('availability')}
           className="w-full p-2 border rounded"
           type="text"
+          placeholder="Weekends, Evenings"
+          disabled={loading}
         />
-        {errors.availability && <p className="text-red-500">{errors.availability.message}</p>}
+        {errors.availability && <p className="text-red-500 text-sm mt-1">{errors.availability.message}</p>}
       </div>
-      <Button type="submit">Register</Button>
+      <Button type="submit" disabled={loading}>
+        {loading ? 'Creating account...' : 'Register'}
+      </Button>
     </form>
   );
 }

@@ -5,6 +5,8 @@ import { useAuthStore } from '../../store/authStore';
 import { login } from '../../services/api';
 import Button from '../common/Button';
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { showError, showSuccess } from '../../utils/toast';
 
 const schema = yup.object({
   email: yup.string().email('Invalid email').required('Email is required'),
@@ -14,18 +16,25 @@ const schema = yup.object({
 function LoginForm() {
   const { setUser } = useAuthStore();
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
   });
 
   const onSubmit = async (data) => {
+    setLoading(true);
     try {
       const response = await login(data);
       localStorage.setItem('token', response.data.token);
       setUser(response.data.user);
+      showSuccess('Login successful!');
       navigate('/search');
     } catch (error) {
       console.error('Login failed:', error);
+      showError(error.response?.data?.message || 'Invalid email or password');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -37,8 +46,9 @@ function LoginForm() {
           {...register('email')}
           className="w-full p-2 border rounded"
           type="email"
+          disabled={loading}
         />
-        {errors.email && <p className="text-red-500">{errors.email.message}</p>}
+        {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
       </div>
       <div>
         <label className="block text-gray-700">Password</label>
@@ -46,10 +56,13 @@ function LoginForm() {
           {...register('password')}
           className="w-full p-2 border rounded"
           type="password"
+          disabled={loading}
         />
-        {errors.password && <p className="text-red-500">{errors.password.message}</p>}
+        {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
       </div>
-      <Button type="submit">Login</Button>
+      <Button type="submit" disabled={loading}>
+        {loading ? 'Logging in...' : 'Login'}
+      </Button>
     </form>
   );
 }

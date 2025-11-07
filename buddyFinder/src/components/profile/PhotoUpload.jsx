@@ -1,14 +1,13 @@
-// src/components/profile/PhotoUpload.jsx
 import { useState, useEffect } from 'react';
 import { Camera, X, Loader } from 'lucide-react';
 import axios from 'axios';
+import { showError, showSuccess } from '../../utils/toast';
 
 function PhotoUpload({ userId, currentPhotos, onPhotoUploaded }) {
   const [uploading, setUploading] = useState(false);
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // FIX: Fetch photos on mount to ensure we have current user's photos
   useEffect(() => {
     fetchUserPhotos();
   }, [userId]);
@@ -28,8 +27,6 @@ function PhotoUpload({ userId, currentPhotos, onPhotoUploaded }) {
         }
       );
 
-      console.log('📸 Fetched profile:', response.data);
-      
       const photosJson = response.data.photos;
       let parsedPhotos = [];
       
@@ -37,16 +34,16 @@ function PhotoUpload({ userId, currentPhotos, onPhotoUploaded }) {
         try {
           parsedPhotos = JSON.parse(photosJson);
         } catch (e) {
-          console.error('❌ Failed to parse photos:', e);
+          console.error('Failed to parse photos:', e);
           parsedPhotos = [];
         }
       }
 
-      console.log('🖼️ Parsed photos:', parsedPhotos);
       setPhotos(parsedPhotos);
       
     } catch (error) {
-      console.error('❌ Failed to fetch photos:', error);
+      console.error('Failed to fetch photos:', error);
+      showError('Failed to load photos');
       setPhotos([]);
     } finally {
       setLoading(false);
@@ -58,12 +55,12 @@ function PhotoUpload({ userId, currentPhotos, onPhotoUploaded }) {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      showError('Please select an image file');
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      alert('File too large (max 10MB)');
+      showError('File too large (max 10MB)');
       return;
     }
 
@@ -85,24 +82,17 @@ function PhotoUpload({ userId, currentPhotos, onPhotoUploaded }) {
         }
       );
 
-      console.log('✅ Upload response:', response.data);
-
-      // Parse photos from response
       const photosJson = response.data.photos;
-      console.log('📸 Photos JSON:', photosJson);
-
       let newPhotos = [];
       
       if (photosJson && photosJson !== 'null' && photosJson !== '[]') {
         try {
           newPhotos = JSON.parse(photosJson);
         } catch (e) {
-          console.error('❌ Failed to parse photos:', e);
+          console.error('Failed to parse photos:', e);
           newPhotos = [];
         }
       }
-
-      console.log('🖼️ New photos:', newPhotos);
 
       setPhotos(newPhotos);
       
@@ -110,10 +100,10 @@ function PhotoUpload({ userId, currentPhotos, onPhotoUploaded }) {
         onPhotoUploaded(newPhotos);
       }
 
-      alert('Photo uploaded successfully!');
+      showSuccess('Photo uploaded successfully!');
     } catch (error) {
-      console.error('❌ Upload failed:', error);
-      alert('Upload failed: ' + (error.response?.data?.message || error.message));
+      console.error('Upload failed:', error);
+      showError(error.response?.data?.message || 'Upload failed');
     } finally {
       setUploading(false);
     }
@@ -146,10 +136,10 @@ function PhotoUpload({ userId, currentPhotos, onPhotoUploaded }) {
         onPhotoUploaded(newPhotos);
       }
 
-      alert('Photo deleted!');
+      showSuccess('Photo deleted!');
     } catch (error) {
       console.error('Delete failed:', error);
-      alert('Delete failed: ' + (error.response?.data?.message || error.message));
+      showError(error.response?.data?.message || 'Delete failed');
     }
   };
 
@@ -167,7 +157,6 @@ function PhotoUpload({ userId, currentPhotos, onPhotoUploaded }) {
         My Photos ({photos.length}/6)
       </h3>
 
-      {/* Photo Grid */}
       {photos.length > 0 && (
         <div className="grid grid-cols-3 gap-4 mb-4">
           {photos.map((url, index) => (
@@ -177,7 +166,7 @@ function PhotoUpload({ userId, currentPhotos, onPhotoUploaded }) {
                 alt={`Photo ${index + 1}`}
                 className="w-full h-full object-cover rounded-lg"
                 onError={(e) => {
-                  console.error('❌ Image load error:', url);
+                  console.error('Image load error:', url);
                   e.target.src = 'https://via.placeholder.com/150?text=Error';
                 }}
               />
@@ -193,7 +182,6 @@ function PhotoUpload({ userId, currentPhotos, onPhotoUploaded }) {
         </div>
       )}
 
-      {/* Upload Button */}
       {photos.length < 6 && (
         <label className="flex items-center justify-center w-full h-32 border-2 border-dashed border-white border-opacity-30 rounded-lg cursor-pointer hover:border-white hover:border-opacity-50 transition-colors bg-white bg-opacity-10">
           <div className="text-center">
@@ -222,7 +210,6 @@ function PhotoUpload({ userId, currentPhotos, onPhotoUploaded }) {
         </label>
       )}
 
-      {/* Info */}
       {photos.length === 0 && (
         <p className="text-white opacity-70 text-sm text-center mt-4">
           Add photos to your profile to get more matches!

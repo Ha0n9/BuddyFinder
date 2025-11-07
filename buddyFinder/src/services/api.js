@@ -1,5 +1,6 @@
 // src/services/api.js
 import axios from 'axios';
+import { showError } from '../utils/toast';
 
 const api = axios.create({
   baseURL: 'http://localhost:8080/api',
@@ -8,7 +9,7 @@ const api = axios.create({
   },
 });
 
-// Add token to every request
+// Request interceptor
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -16,6 +17,36 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Response interceptor - Handle 401
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      console.error('🔐 Authentication failed:', error.response.data);
+      
+      // Clear auth data
+      localStorage.removeItem('token');
+      
+      // Don't redirect if already on auth pages
+      const currentPath = window.location.pathname;
+      if (!currentPath.includes('/login') && !currentPath.includes('/register')) {
+        showError('Session expired. Please login again.');
+        
+        // Delay redirect to show toast
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 1000);
+      }
+    } else if (error.response?.status >= 500) {
+      showError('Server error. Please try again later.');
+    } else if (error.response?.data?.message) {
+      showError(error.response.data.message);
+    }
+    
+    return Promise.reject(error);
+  }
+);
 
 // Auth
 export const login = (data) => api.post('/auth/login', data);
@@ -38,6 +69,7 @@ export const getMatches = () => api.get('/matches');
 export const postActivity = (data) => api.post('/activities', data);
 export const getActivities = () => api.get('/activities');
 export const joinActivity = (activityId) => api.post(`/activities/${activityId}/join`);
+export const deleteActivity = (activityId) => api.delete(`/activities/${activityId}`);
 
 // Chat
 export const sendMessage = (data) => api.post('/chat/send', data);
@@ -47,12 +79,10 @@ export const getMessages = (matchId) => api.get(`/chat/messages/${matchId}`);
 export const submitRating = (data) => api.post('/ratings', data);
 export const getRatings = (userId) => api.get(`/ratings/user/${userId}`);
 
-// Delete Activity
-export const deleteActivity = (activityId) => api.delete(`/activities/${activityId}`);
-
 export default api;
 
 
+// ============== ONLY FOR MOCKING PURPOSES ================
 // services/api.js
 // import axios from 'axios';
 

@@ -1,9 +1,9 @@
-// src/components/activity/ActivityList.jsx
 import { useState, useEffect } from 'react';
 import { getActivities, joinActivity, deleteActivity } from '../../services/api';
 import Button from '../common/Button';
 import { MapPin, Clock, Users, Trash2 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import { showError, showSuccess } from '../../utils/toast';
 
 function ActivityList({ refresh }) {
   const [activities, setActivities] = useState([]);
@@ -21,6 +21,7 @@ function ActivityList({ refresh }) {
       setActivities(response.data);
     } catch (error) {
       console.error('Failed to fetch activities:', error);
+      showError('Failed to load activities');
     } finally {
       setLoading(false);
     }
@@ -29,11 +30,11 @@ function ActivityList({ refresh }) {
   const handleJoin = async (activityId) => {
     try {
       await joinActivity(activityId);
-      alert('Joined activity successfully!');
+      showSuccess('Joined activity successfully!');
       fetchActivities();
     } catch (error) {
       console.error('Failed to join activity:', error);
-      alert('Failed to join: ' + (error.response?.data?.message || error.message));
+      showError(error.response?.data?.message || 'Failed to join activity');
     }
   };
 
@@ -42,11 +43,11 @@ function ActivityList({ refresh }) {
 
     try {
       await deleteActivity(activityId);
-      alert('Activity deleted successfully!');
+      showSuccess('Activity deleted successfully!');
       fetchActivities();
     } catch (error) {
       console.error('Failed to delete activity:', error);
-      alert('Failed to delete: ' + (error.response?.data?.message || error.message));
+      showError(error.response?.data?.message || 'Failed to delete activity');
     }
   };
 

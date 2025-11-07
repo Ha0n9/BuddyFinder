@@ -1,4 +1,3 @@
-// src/pages/ChatPage.jsx
 import { useState, useEffect } from 'react';
 import { getMatches } from '../services/api';
 import ChatWindow from '../components/chat/ChatWindow';
@@ -18,7 +17,6 @@ function ChatPage() {
     try {
       const response = await getMatches();
       setMatches(response.data);
-      
       if (response.data.length > 0) {
         setSelectedMatch(response.data[0]);
       }
@@ -53,18 +51,14 @@ function ChatPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-400 via-purple-500 to-orange-400 py-12 px-4">
-      {/* ✅ FIX: Fixed height container */}
-      <div className="max-w-6xl mx-auto h-[calc(100vh-8rem)]">
+      <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold text-white mb-8 text-center">Messages</h1>
         
-        {/* ✅ FIX: Grid with fixed height */}
-        <div className="grid md:grid-cols-3 gap-6 h-[calc(100%-4rem)]">
-          {/* Matches List - Scrollable */}
-          <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-3xl p-6 overflow-hidden flex flex-col">
-            <h2 className="text-xl font-bold text-white mb-4 flex-shrink-0">Your Matches</h2>
-            
-            {/* ✅ Scrollable list */}
-            <div className="flex-1 overflow-y-auto space-y-2 scrollbar-thin">
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* Matches List */}
+          <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-3xl p-6" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+            <h2 className="text-xl font-bold text-white mb-4">Your Matches</h2>
+            <div className="space-y-2">
               {matches.map((match) => (
                 <button
                   key={match.matchId}
@@ -81,9 +75,7 @@ function ChatPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-white font-bold truncate">{match.name}</p>
-                      <p className="text-white text-sm opacity-70 truncate">
-                        {match.location}
-                      </p>
+                      <p className="text-white text-sm opacity-70 truncate">{match.location}</p>
                     </div>
                   </div>
                 </button>
@@ -91,12 +83,12 @@ function ChatPage() {
             </div>
           </div>
 
-          {/* Chat Window - Fixed height */}
-          <div className="md:col-span-2 h-full">
+          {/* Chat Window */}
+          <div className="md:col-span-2">
             {selectedMatch ? (
               <ChatWindow match={selectedMatch} />
             ) : (
-              <div className="h-full bg-white bg-opacity-20 backdrop-blur-sm rounded-3xl flex items-center justify-center">
+              <div style={{ height: '600px' }} className="bg-white bg-opacity-20 backdrop-blur-sm rounded-3xl flex items-center justify-center">
                 <p className="text-white opacity-70">Select a match to start chatting</p>
               </div>
             )}
