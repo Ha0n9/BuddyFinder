@@ -14,6 +14,7 @@ function ChatWindow({ match }) {
   const [connected, setConnected] = useState(false);
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     if (match?.matchId) {
@@ -31,9 +32,16 @@ function ChatWindow({ match }) {
     scrollToBottom();
   }, [messages]);
 
+  // ✅ FIX: Auto-focus input when chat is ready
+  useEffect(() => {
+    if (!loading && connected) {
+      inputRef.current?.focus();
+    }
+  }, [loading, connected]);
+
   const initializeChat = async () => {
     setLoading(true);
-    
+
     try {
       // 1. Fetch existing messages
       const response = await getMessages(match.matchId);
@@ -42,23 +50,23 @@ function ChatWindow({ match }) {
 
       // 2. Connect WebSocket
       const token = localStorage.getItem('token');
-      
+
       // Check if websocketService has the method (backward compatibility)
       const isConnected = typeof websocketService.isConnected === 'function' 
         ? websocketService.isConnected() 
         : websocketService.client?.connected || false;
-      
+
       if (!isConnected) {
         console.log('🔌 Connecting to WebSocket...');
         await websocketService.connect(token);
       } else {
         console.log('✅ WebSocket already connected');
       }
-      
+
       // 3. Subscribe to this match's messages
       websocketService.subscribeToMatch(match.matchId, (newMessage) => {
         console.log('📩 New message received:', newMessage);
-        
+
         // ✅ FIX: Always add new message to state
         setMessages(prev => {
           // Check if message already exists (prevent duplicates)
@@ -120,23 +128,30 @@ function ChatWindow({ match }) {
           msg.messageId === optimisticMessage.messageId ||
           (msg.content === content && msg.senderId === user.userId)
         );
-        
+
         if (exists) {
           console.log('⚠️ Message already in state (from WebSocket)');
           return prev;
         }
-        
+
         console.log('➕ Adding optimistic message');
         return [...prev, optimisticMessage];
       });
 
       // Scroll to bottom
       setTimeout(scrollToBottom, 100);
-      
+
+      // ✅ FIX: Focus back to input for better UX
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 150);
+
     } catch (error) {
       console.error('❌ Failed to send message:', error);
       alert('Failed to send message: ' + (error.response?.data?.message || error.message));
       setInput(content); // Restore input on error
+      // Focus back to input even on error
+      inputRef.current?.focus();
     } finally {
       setSending(false);
     }
@@ -178,7 +193,7 @@ function ChatWindow({ match }) {
       </div>
 
       {/* Messages - Scrollable container with custom scrollbar */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-white scrollbar-thumb-rounded scrollbar-track-transparent">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-white scrollbar-thumb-rounded scrollbar-track-transparent">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-white opacity-70">No messages yet. Say hi! 👋</p>
@@ -199,6 +214,7 @@ function ChatWindow({ match }) {
       <div className="flex-shrink-0 p-4 border-t border-white border-opacity-30 bg-white bg-opacity-5">
         <div className="flex gap-2">
           <input
+            ref={inputRef}
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -206,8 +222,8 @@ function ChatWindow({ match }) {
             disabled={!connected || sending}
             className="flex-1 p-3 rounded-xl bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white disabled:opacity-50"
             placeholder={
-              !connected ? "Connecting..." : 
-              sending ? "Sending..." : 
+              !connected ? "Connecting..." :
+              sending ? "Sending..." :
               "Type a message..."
             }
           />
@@ -231,4 +247,4 @@ function ChatWindow({ match }) {
   );
 }
 
-export default ChatWindow;
+export default ChatWindow
