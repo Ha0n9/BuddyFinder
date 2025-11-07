@@ -53,25 +53,30 @@ function ChatPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-400 via-purple-500 to-orange-400 py-12 px-4">
+      {/* ✅ FIX: Fixed height container */}
       <div className="max-w-6xl mx-auto h-[calc(100vh-8rem)]">
         <h1 className="text-3xl font-bold text-white mb-8 text-center">Messages</h1>
         
-        <div className="grid md:grid-cols-3 gap-6 h-full">
+        {/* ✅ FIX: Grid with fixed height */}
+        <div className="grid md:grid-cols-3 gap-6 h-[calc(100%-4rem)]">
+          {/* Matches List - Scrollable */}
           <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-3xl p-6 overflow-hidden flex flex-col">
-            <h2 className="text-xl font-bold text-white mb-4">Your Matches</h2>
-            <div className="flex-1 overflow-y-auto space-y-2">
+            <h2 className="text-xl font-bold text-white mb-4 flex-shrink-0">Your Matches</h2>
+            
+            {/* ✅ Scrollable list */}
+            <div className="flex-1 overflow-y-auto space-y-2 scrollbar-thin">
               {matches.map((match) => (
                 <button
                   key={match.matchId}
                   onClick={() => setSelectedMatch(match)}
                   className={`w-full text-left p-4 rounded-xl transition-all ${
                     selectedMatch?.matchId === match.matchId
-                      ? 'bg-white bg-opacity-30'
+                      ? 'bg-white bg-opacity-30 shadow-lg'
                       : 'bg-white bg-opacity-10 hover:bg-opacity-20'
                   }`}
                 >
                   <div className="flex items-center">
-                    <div className="w-12 h-12 bg-gradient-to-br from-pink-300 to-orange-300 rounded-full flex items-center justify-center mr-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-pink-300 to-orange-300 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
                       <User className="w-6 h-6 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -86,6 +91,7 @@ function ChatPage() {
             </div>
           </div>
 
+          {/* Chat Window - Fixed height */}
           <div className="md:col-span-2 h-full">
             {selectedMatch ? (
               <ChatWindow match={selectedMatch} />
