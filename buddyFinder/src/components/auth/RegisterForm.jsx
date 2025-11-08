@@ -11,7 +11,10 @@ import { showError, showSuccess } from '../../utils/toast';
 const schema = yup.object({
   name: yup.string().required('Name is required'),
   email: yup.string().email('Invalid email').required('Email is required'),
-  password: yup.string().min(6, 'Password must be at least 6 characters').required('Password is required'),
+  password: yup
+    .string()
+    .min(6, 'Password must be at least 6 characters')
+    .required('Password is required'),
   age: yup.number().positive().integer().required('Age is required'),
   interests: yup.string().required('Interests are required'),
   location: yup.string().required('Location is required'),
@@ -22,8 +25,12 @@ function RegisterForm() {
   const { setUser } = useAuthStore();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  
-  const { register, handleSubmit, formState: { errors } } = useForm({
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
     resolver: yupResolver(schema),
   });
 
@@ -44,87 +51,60 @@ function RegisterForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-md mx-auto p-4 space-y-4">
-      <div>
-        <label htmlFor="name" className="block text-gray-700">Name</label>
-        <input
-          id="name"
-          {...register('name')}
-          className="w-full p-2 border rounded"
-          type="text"
-          disabled={loading}
-        />
-        {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
-      </div>
-      <div>
-        <label htmlFor="email" className="block text-gray-700">Email</label>
-        <input
-          id="email"
-          {...register('email')}
-          className="w-full p-2 border rounded"
-          type="email"
-          disabled={loading}
-        />
-        {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
-      </div>
-      <div>
-        <label htmlFor="password" className="block text-gray-700">Password</label>
-        <input
-          id="password"
-          {...register('password')}
-          className="w-full p-2 border rounded"
-          type="password"
-          disabled={loading}
-        />
-        {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
-      </div>
-      <div>
-        <label htmlFor="age" className="block text-gray-700">Age</label>
-        <input
-          id="age"
-          {...register('age')}
-          className="w-full p-2 border rounded"
-          type="number"
-          disabled={loading}
-        />
-        {errors.age && <p className="text-red-500 text-sm mt-1">{errors.age.message}</p>}
-      </div>
-      <div>
-        <label htmlFor="interests" className="block text-gray-700">Interests</label>
-        <input
-          id="interests"
-          {...register('interests')}
-          className="w-full p-2 border rounded"
-          type="text"
-          placeholder="Gym, Running, Yoga"
-          disabled={loading}
-        />
-        {errors.interests && <p className="text-red-500 text-sm mt-1">{errors.interests.message}</p>}
-      </div>
-      <div>
-        <label htmlFor="location" className="block text-gray-700">Location</label>
-        <input
-          id="location"
-          {...register('location')}
-          className="w-full p-2 border rounded"
-          type="text"
-          disabled={loading}
-        />
-        {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location.message}</p>}
-      </div>
-      <div>
-        <label htmlFor="availability" className="block text-gray-700">Availability</label>
-        <input
-          id="availability"
-          {...register('availability')}
-          className="w-full p-2 border rounded"
-          type="text"
-          placeholder="Weekends, Evenings"
-          disabled={loading}
-        />
-        {errors.availability && <p className="text-red-500 text-sm mt-1">{errors.availability.message}</p>}
-      </div>
-      <Button type="submit" disabled={loading}>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="max-w-md mx-auto space-y-5"
+    >
+      {[
+        { id: 'name', label: 'Name', type: 'text' },
+        { id: 'email', label: 'Email', type: 'email' },
+        { id: 'password', label: 'Password', type: 'password' },
+        { id: 'age', label: 'Age', type: 'number' },
+        {
+          id: 'interests',
+          label: 'Interests',
+          type: 'text',
+          placeholder: 'Gym, Running, Yoga',
+        },
+        { id: 'location', label: 'Location', type: 'text' },
+        {
+          id: 'availability',
+          label: 'Availability',
+          type: 'text',
+          placeholder: 'Weekends, Evenings',
+        },
+      ].map((field) => (
+        <div key={field.id}>
+          <label
+            htmlFor={field.id}
+            className="block text-sm font-semibold text-gray-300 mb-2 tracking-wide"
+          >
+            {field.label}
+          </label>
+          <input
+            id={field.id}
+            {...register(field.id)}
+            type={field.type}
+            placeholder={field.placeholder || ''}
+            disabled={loading}
+            className="w-full p-3 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A] text-white placeholder-gray-500 
+                     focus:border-[#FF5F00] focus:ring-2 focus:ring-[#FF5F00]/40 transition-all duration-200"
+          />
+          {errors[field.id] && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors[field.id].message}
+            </p>
+          )}
+        </div>
+      ))}
+
+      <Button
+        type="submit"
+        disabled={loading}
+        className="w-full mt-4 py-3 font-bold bg-[#FF5F00] hover:bg-[#ff7533] text-white rounded-xl 
+                   shadow-[0_0_20px_rgba(255,95,0,0.3)] hover:shadow-[0_0_25px_rgba(255,95,0,0.5)] 
+                   transition-all duration-200"
+      >
         {loading ? 'Creating account...' : 'Register'}
       </Button>
     </form>

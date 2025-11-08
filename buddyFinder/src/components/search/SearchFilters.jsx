@@ -1,4 +1,3 @@
-// src/components/search/SearchFilters.jsx - Update with tier check
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -20,9 +19,8 @@ const schema = yup.object({
 function SearchFilters({ onSearch }) {
   const { user } = useAuthStore();
   const isPremium = user?.tier === 'PREMIUM' || user?.tier === 'ELITE';
-  const isElite = user?.tier === 'ELITE';
 
-  const { register, handleSubmit, formState: { errors }, reset, watch } = useForm({
+  const { register, handleSubmit, reset, watch } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
       activity: '',
@@ -36,12 +34,10 @@ function SearchFilters({ onSearch }) {
   });
 
   const watchedFields = watch();
-  const hasFilters = Object.values(watchedFields).some(value => value);
+  const hasFilters = Object.values(watchedFields).some((v) => v);
 
-  const onSubmit = async (data) => {
-    const filters = Object.fromEntries(
-      Object.entries(data).filter(([_, value]) => value)
-    );
+  const onSubmit = (data) => {
+    const filters = Object.fromEntries(Object.entries(data).filter(([_, v]) => v));
     onSearch(filters);
   };
 
@@ -50,50 +46,19 @@ function SearchFilters({ onSearch }) {
     onSearch({});
   };
 
-  const PremiumBadge = () => (
-    <span className="inline-flex items-center gap-1 bg-yellow-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
-      <Crown className="w-3 h-3" />
-      Premium
-    </span>
-  );
-
-  const LockedFeature = ({ feature }) => (
-    <div className="relative">
-      <div className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm rounded-xl flex items-center justify-center z-10">
-        <div className="text-center text-white p-4">
-          <Lock className="w-8 h-8 mx-auto mb-2" />
-          <p className="font-bold mb-1">{feature} Filter</p>
-          <p className="text-xs mb-2">Premium Feature</p>
-          <Link
-            to="/pricing"
-            className="inline-block bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold hover:bg-yellow-600 transition-all"
-          >
-            Upgrade
-          </Link>
-        </div>
-      </div>
-      <div className="opacity-30 pointer-events-none">
-        <select
-          disabled
-          className="w-full p-3 rounded-xl bg-white bg-opacity-20 text-white border border-white border-opacity-30"
-        >
-          <option>Select {feature}</option>
-        </select>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-3xl p-6 sticky top-8">
+    <div className="bg-[#1A1A1A]/90 backdrop-blur-md border border-[#2A2A2A] rounded-3xl p-6 shadow-lg">
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-bold text-white flex items-center gap-2">
-          <Search className="w-5 h-5" />
+          <Search className="w-5 h-5 text-[#FF5F00]" />
           Find Gym Buddy
         </h3>
+
         {hasFilters && (
           <button
             onClick={handleClear}
-            className="text-white opacity-70 hover:opacity-100 transition-opacity"
+            className="text-gray-300 hover:text-white transition"
             type="button"
           >
             <X className="w-5 h-5" />
@@ -101,187 +66,174 @@ function SearchFilters({ onSearch }) {
         )}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Basic Filters - Free for all */}
-        <div>
-          <label className="flex items-center text-white text-sm font-medium mb-2">
-            <Dumbbell className="w-4 h-4 mr-2" />
-            Activity
-          </label>
-          <input
-            {...register('activity')}
-            className="w-full p-3 rounded-xl bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
-            type="text"
-            placeholder="e.g., Running, Yoga, Gym"
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        {/* Activity */}
+        <Field
+          label="Activity"
+          icon={<Dumbbell className="w-4 h-4 text-[#FF5F00]" />}
+          placeholder="e.g., Running, Yoga, Gym"
+          register={register('activity')}
+        />
+
+        {/* Location */}
+        <Field
+          label="Location"
+          icon={<MapPin className="w-4 h-4 text-[#FF5F00]" />}
+          placeholder="e.g., Vancouver, Downtown"
+          register={register('location')}
+        />
+
+        {/* Time */}
+        <SelectField
+          label="Time"
+          icon={<Clock className="w-4 h-4 text-[#FF5F00]" />}
+          register={register('time')}
+          options={[
+            { value: '', label: 'Any time' },
+            { value: 'morning', label: 'Morning (6AM - 12PM)' },
+            { value: 'afternoon', label: 'Afternoon (12PM - 6PM)' },
+            { value: 'evening', label: 'Evening (6PM - 12AM)' },
+            { value: 'weekends', label: 'Weekends' },
+          ]}
+        />
+
+        {/* Divider */}
+        <div className="border-t border-[#2A2A2A] pt-4">
+          <p className="text-xs text-gray-400 mb-2">Advanced Filters</p>
+
+          {/* MBTI */}
+          {isPremium ? (
+            <SelectField
+              label="MBTI Type"
+              register={register('mbtiType')}
+              options={[
+                { value: '', label: 'Any' },
+                ...[
+                  'INTJ','INTP','ENTJ','ENTP','INFJ','INFP','ENFJ','ENFP',
+                  'ISTJ','ISFJ','ESTJ','ESFJ','ISTP','ISFP','ESTP','ESFP',
+                ].map((t) => ({ value: t, label: t })),
+              ]}
+            />
+          ) : (
+            <LockedFeature feature="MBTI" />
+          )}
+
+          {/* Zodiac */}
+          {isPremium ? (
+            <SelectField
+              label="Zodiac Sign"
+              register={register('zodiacSign')}
+              options={[
+                { value: '', label: 'Any' },
+                ...[
+                  'Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio',
+                  'Sagittarius','Capricorn','Aquarius','Pisces'
+                ].map((z) => ({ value: z, label: z })),
+              ]}
+            />
+          ) : (
+            <LockedFeature feature="Zodiac" />
+          )}
+
+          {/* Fitness Level */}
+          <SelectField
+            label="Fitness Level"
+            register={register('fitnessLevel')}
+            options={[
+              { value: '', label: 'Any' },
+              { value: 'Beginner', label: 'Beginner' },
+              { value: 'Intermediate', label: 'Intermediate' },
+              { value: 'Advanced', label: 'Advanced' },
+            ]}
+          />
+
+          {/* Gender */}
+          <SelectField
+            label="Gender"
+            register={register('gender')}
+            options={[
+              { value: '', label: 'Any' },
+              { value: 'Male', label: 'Male' },
+              { value: 'Female', label: 'Female' },
+              { value: 'Other', label: 'Other' },
+            ]}
           />
         </div>
 
-        <div>
-          <label className="flex items-center text-white text-sm font-medium mb-2">
-            <MapPin className="w-4 h-4 mr-2" />
-            Location
-          </label>
-          <input
-            {...register('location')}
-            className="w-full p-3 rounded-xl bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
-            type="text"
-            placeholder="e.g., Vancouver, Downtown"
-          />
-        </div>
-
-        <div>
-          <label className="flex items-center text-white text-sm font-medium mb-2">
-            <Clock className="w-4 h-4 mr-2" />
-            Time
-          </label>
-          <select
-            {...register('time')}
-            className="w-full p-3 rounded-xl bg-white bg-opacity-20 text-white border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
-          >
-            <option value="" className="text-gray-800">Any time</option>
-            <option value="morning" className="text-gray-800">Morning (6AM - 12PM)</option>
-            <option value="afternoon" className="text-gray-800">Afternoon (12PM - 6PM)</option>
-            <option value="evening" className="text-gray-800">Evening (6PM - 12AM)</option>
-            <option value="weekends" className="text-gray-800">Weekends</option>
-          </select>
-        </div>
-
-        {/* Premium Filters */}
-        <div className="pt-4 border-t border-white border-opacity-20">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-white text-xs opacity-70">Advanced Filters</p>
-            {!isPremium && <PremiumBadge />}
-          </div>
-          
-          {/* MBTI Type - Premium */}
-          <div className="mb-4">
-            <label className="flex items-center justify-between text-white text-sm font-medium mb-2">
-              <span>MBTI Type</span>
-              {!isPremium && <Lock className="w-3 h-3 opacity-70" />}
-            </label>
-            {isPremium ? (
-              <select
-                {...register('mbtiType')}
-                className="w-full p-3 rounded-xl bg-white bg-opacity-20 text-white border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
-              >
-                <option value="" className="text-gray-800">Any</option>
-                <option value="INTJ" className="text-gray-800">INTJ</option>
-                <option value="INTP" className="text-gray-800">INTP</option>
-                <option value="ENTJ" className="text-gray-800">ENTJ</option>
-                <option value="ENTP" className="text-gray-800">ENTP</option>
-                <option value="INFJ" className="text-gray-800">INFJ</option>
-                <option value="INFP" className="text-gray-800">INFP</option>
-                <option value="ENFJ" className="text-gray-800">ENFJ</option>
-                <option value="ENFP" className="text-gray-800">ENFP</option>
-                <option value="ISTJ" className="text-gray-800">ISTJ</option>
-                <option value="ISFJ" className="text-gray-800">ISFJ</option>
-                <option value="ESTJ" className="text-gray-800">ESTJ</option>
-                <option value="ESFJ" className="text-gray-800">ESFJ</option>
-                <option value="ISTP" className="text-gray-800">ISTP</option>
-                <option value="ISFP" className="text-gray-800">ISFP</option>
-                <option value="ESTP" className="text-gray-800">ESTP</option>
-                <option value="ESFP" className="text-gray-800">ESFP</option>
-              </select>
-            ) : (
-              <LockedFeature feature="MBTI" />
-            )}
-          </div>
-
-          {/* Zodiac Sign - Premium */}
-          <div className="mb-4">
-            <label className="flex items-center justify-between text-white text-sm font-medium mb-2">
-              <span>Zodiac Sign</span>
-              {!isPremium && <Lock className="w-3 h-3 opacity-70" />}
-            </label>
-            {isPremium ? (
-              <select
-                {...register('zodiacSign')}
-                className="w-full p-3 rounded-xl bg-white bg-opacity-20 text-white border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
-              >
-                <option value="" className="text-gray-800">Any</option>
-                <option value="Aries" className="text-gray-800">Aries</option>
-                <option value="Taurus" className="text-gray-800">Taurus</option>
-                <option value="Gemini" className="text-gray-800">Gemini</option>
-                <option value="Cancer" className="text-gray-800">Cancer</option>
-                <option value="Leo" className="text-gray-800">Leo</option>
-                <option value="Virgo" className="text-gray-800">Virgo</option>
-                <option value="Libra" className="text-gray-800">Libra</option>
-                <option value="Scorpio" className="text-gray-800">Scorpio</option>
-                <option value="Sagittarius" className="text-gray-800">Sagittarius</option>
-                <option value="Capricorn" className="text-gray-800">Capricorn</option>
-                <option value="Aquarius" className="text-gray-800">Aquarius</option>
-                <option value="Pisces" className="text-gray-800">Pisces</option>
-              </select>
-            ) : (
-              <LockedFeature feature="Zodiac" />
-            )}
-          </div>
-
-          {/* Fitness Level - Free */}
-          <div className="mb-4">
-            <label className="text-white text-sm font-medium mb-2 block">
-              Fitness Level
-            </label>
-            <select
-              {...register('fitnessLevel')}
-              className="w-full p-3 rounded-xl bg-white bg-opacity-20 text-white border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
-            >
-              <option value="" className="text-gray-800">Any</option>
-              <option value="Beginner" className="text-gray-800">Beginner</option>
-              <option value="Intermediate" className="text-gray-800">Intermediate</option>
-              <option value="Advanced" className="text-gray-800">Advanced</option>
-            </select>
-          </div>
-
-          {/* Gender - Free */}
-          <div className="mb-4">
-            <label className="text-white text-sm font-medium mb-2 block">
-              Gender
-            </label>
-            <select
-              {...register('gender')}
-              className="w-full p-3 rounded-xl bg-white bg-opacity-20 text-white border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
-            >
-              <option value="" className="text-gray-800">Any</option>
-              <option value="Male" className="text-gray-800">Male</option>
-              <option value="Female" className="text-gray-800">Female</option>
-              <option value="Other" className="text-gray-800">Other</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Search Button */}
-        <Button 
+        {/* Submit Button */}
+        <Button
           type="submit"
-          className="w-full bg-white text-pink-500 font-bold py-3 rounded-xl hover:bg-opacity-90 transition-all shadow-lg"
+          variant="primary"
+          className="w-full font-bold py-3 text-lg shadow-[0_0_20px_rgba(255,95,0,0.4)]"
         >
-          <Search className="w-5 h-5 inline mr-2" />
-          Search
+          <Search className="w-5 h-5 mr-2" /> Search
         </Button>
 
-        {/* Upgrade CTA for Free users */}
-        {!isPremium && (
-          <Link to="/pricing">
-            <div className="mt-4 p-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl text-white text-center cursor-pointer hover:shadow-lg transition-all">
-              <Crown className="w-6 h-6 mx-auto mb-2" />
-              <p className="font-bold mb-1">Unlock Advanced Filters</p>
-              <p className="text-xs opacity-90">Upgrade to Premium to search by MBTI & Zodiac</p>
-            </div>
-          </Link>
-        )}
-
         {/* Tips */}
-        <div className="mt-4 pt-4 border-t border-white border-opacity-20">
-          <p className="text-white text-xs opacity-70 mb-2">💡 Search Tips:</p>
-          <ul className="text-white text-xs opacity-60 space-y-1">
+        <div className="mt-5 border-t border-[#2A2A2A] pt-4 text-gray-400 text-xs">
+          <p className="mb-1">💡 Tips:</p>
+          <ul className="space-y-1">
             <li>• Leave fields empty to see all matches</li>
             <li>• Be specific for better results</li>
-            {!isPremium && <li>• Upgrade for personality-based matching</li>}
+            {!isPremium && <li>• Upgrade to unlock MBTI & Zodiac filters</li>}
           </ul>
         </div>
       </form>
     </div>
   );
 }
+
+/* --------------- Sub Components --------------- */
+const Field = ({ label, icon, placeholder, register }) => (
+  <div>
+    <label className="text-sm font-medium text-gray-200 mb-2 block flex items-center gap-2">
+      {icon} {label}
+    </label>
+    <input
+      {...register}
+      className="w-full p-3 rounded-xl bg-[#2A2A2A]/60 text-white placeholder-gray-400 border border-[#3A3A3A] focus:outline-none focus:ring-2 focus:ring-[#FF5F00]"
+      placeholder={placeholder}
+    />
+  </div>
+);
+
+const SelectField = ({ label, icon, register, options }) => (
+  <div>
+    <label className="text-sm font-medium text-gray-200 mb-2 block flex items-center gap-2">
+      {icon} {label}
+    </label>
+    <select
+      {...register}
+      className="w-full p-3 rounded-xl bg-[#2A2A2A]/60 text-white border border-[#3A3A3A] focus:outline-none focus:ring-2 focus:ring-[#FF5F00]"
+    >
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value} className="text-black">
+          {opt.label}
+        </option>
+      ))}
+    </select>
+  </div>
+);
+
+const LockedFeature = ({ feature }) => (
+  <div className="relative mb-3">
+    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm rounded-xl flex flex-col items-center justify-center text-white z-10">
+      <Lock className="w-6 h-6 mb-1 text-[#FF5F00]" />
+      <p className="text-sm font-bold mb-1">{feature} Filter</p>
+      <Link
+        to="/pricing"
+        className="text-xs font-bold bg-[#FF5F00] text-black px-3 py-1 rounded-full hover:bg-[#E95000] transition-all"
+      >
+        Upgrade
+      </Link>
+    </div>
+    <select
+      disabled
+      className="w-full p-3 rounded-xl bg-[#2A2A2A]/40 text-white border border-[#3A3A3A] opacity-30 pointer-events-none"
+    >
+      <option>Select {feature}</option>
+    </select>
+  </div>
+);
 
 export default SearchFilters;

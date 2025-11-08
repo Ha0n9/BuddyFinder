@@ -1,24 +1,15 @@
-// src/components/search/MatchCard.jsx
-import { MapPin, Clock, Dumbbell, Heart, User, Eye } from 'lucide-react';
+import { MapPin, Clock, Dumbbell, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Button from '../common/Button';
 
 function MatchCard({ match, onRequest }) {
-  // Parse photos
   const parsePhotos = (photosJson) => {
-    if (!photosJson || photosJson === 'null' || photosJson === '[]') {
-      return [];
-    }
+    if (!photosJson || photosJson === 'null' || photosJson === '[]') return [];
     try {
-      if (typeof photosJson === 'string') {
-        return JSON.parse(photosJson);
-      }
-      if (Array.isArray(photosJson)) {
-        return photosJson;
-      }
+      if (typeof photosJson === 'string') return JSON.parse(photosJson);
+      if (Array.isArray(photosJson)) return photosJson;
       return [];
-    } catch (e) {
-      console.error('Error parsing photos:', e);
+    } catch {
       return [];
     }
   };
@@ -27,37 +18,42 @@ function MatchCard({ match, onRequest }) {
   const hasPhoto = photos.length > 0;
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+    <div className="bg-[#111111] border border-[#2A2A2A] rounded-2xl shadow-[0_0_20px_rgba(255,95,0,0.15)] overflow-hidden hover:shadow-[0_0_25px_rgba(255,95,0,0.25)] transition-all duration-300 transform hover:-translate-y-1">
       <div className="md:flex">
         {/* Photo Section */}
-        <div className="md:w-48 h-48 md:h-auto relative bg-gradient-to-br from-pink-300 to-orange-300 flex-shrink-0">
+        <div className="md:w-48 h-48 md:h-auto relative bg-[#0B0B0B] flex-shrink-0">
           {hasPhoto ? (
-            <img 
-              src={photos[0]} 
+            <img
+              src={photos[0]}
               alt={match.name}
               className="w-full h-full object-cover"
               onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = 'https://via.placeholder.com/200x200?text=No+Photo';
+                e.target.src =
+                  'https://via.placeholder.com/200x200?text=No+Photo';
               }}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <User className="w-20 h-20 text-white opacity-50" />
+            <div className="w-full h-full flex items-center justify-center bg-[#1A1A1A]">
+              <User className="w-20 h-20 text-[#FF5F00]/60" />
             </div>
           )}
-          
+
           {/* Badges */}
           <div className="absolute top-2 right-2 flex flex-col gap-1">
             {match.isVerified && (
-              <span className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-bold">
+              <span className="bg-[#FF5F00] text-white px-2 py-1 rounded-full text-xs font-bold">
                 ✓ Verified
               </span>
             )}
             {match.tier && match.tier !== 'FREE' && (
-              <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                match.tier === 'PREMIUM' ? 'bg-purple-500 text-white' : 'bg-yellow-500 text-white'
-              }`}>
+              <span
+                className={`px-2 py-1 rounded-full text-xs font-bold ${
+                  match.tier === 'PREMIUM'
+                    ? 'bg-[#FF5F00]/90 text-white'
+                    : 'bg-yellow-500 text-black'
+                }`}
+              >
                 {match.tier}
               </span>
             )}
@@ -65,15 +61,15 @@ function MatchCard({ match, onRequest }) {
         </div>
 
         {/* Info Section */}
-        <div className="p-4 flex-1 flex flex-col">
+        <div className="p-4 flex-1 flex flex-col text-white">
           {/* Header */}
           <div className="flex items-start justify-between mb-3">
             <div>
-              <h3 className="text-xl font-bold text-gray-800">
+              <h3 className="text-xl font-extrabold text-[#FF5F00]">
                 {match.name}, {match.age}
               </h3>
               {match.fitnessLevel && (
-                <span className="inline-block px-2 py-1 bg-pink-100 text-pink-700 text-xs font-bold rounded-full mt-1">
+                <span className="inline-block px-2 py-1 bg-[#FF5F00]/20 text-[#FF5F00] text-xs font-semibold rounded-full mt-1">
                   {match.fitnessLevel}
                 </span>
               )}
@@ -83,31 +79,34 @@ function MatchCard({ match, onRequest }) {
           {/* Details */}
           <div className="space-y-2 mb-4">
             {match.location && (
-              <div className="flex items-center text-gray-600 text-sm">
-                <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
+              <div className="flex items-center text-gray-400 text-sm">
+                <MapPin className="w-4 h-4 mr-2 text-[#FF5F00]" />
                 <span className="truncate">{match.location}</span>
               </div>
             )}
 
             {match.interests && (
-              <div className="flex items-start text-gray-600 text-sm">
-                <Dumbbell className="w-4 h-4 mr-2 flex-shrink-0 mt-0.5" />
+              <div className="flex items-start text-gray-400 text-sm">
+                <Dumbbell className="w-4 h-4 mr-2 text-[#FF5F00]" />
                 <div className="flex flex-wrap gap-1">
-                  {match.interests.split(',').slice(0, 4).map((interest, index) => (
-                    <span 
-                      key={index}
-                      className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full text-xs"
-                    >
-                      {interest.trim()}
-                    </span>
-                  ))}
+                  {match.interests
+                    .split(',')
+                    .slice(0, 4)
+                    .map((interest, index) => (
+                      <span
+                        key={index}
+                        className="bg-[#1A1A1A] border border-[#2A2A2A] text-gray-300 px-2 py-0.5 rounded-full text-xs"
+                      >
+                        {interest.trim()}
+                      </span>
+                    ))}
                 </div>
               </div>
             )}
 
             {match.availability && (
-              <div className="flex items-center text-gray-600 text-sm">
-                <Clock className="w-4 h-4 mr-2 flex-shrink-0" />
+              <div className="flex items-center text-gray-400 text-sm">
+                <Clock className="w-4 h-4 mr-2 text-[#FF5F00]" />
                 <span className="truncate">{match.availability}</span>
               </div>
             )}
@@ -115,7 +114,7 @@ function MatchCard({ match, onRequest }) {
 
           {/* Bio */}
           {match.bio && (
-            <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+            <p className="text-gray-400 text-sm mb-4 line-clamp-2">
               {match.bio}
             </p>
           )}
@@ -123,33 +122,30 @@ function MatchCard({ match, onRequest }) {
           {/* Additional Info */}
           <div className="flex items-center gap-2 mb-4 text-xs text-gray-500">
             {match.zodiacSign && (
-              <span className="bg-gray-100 px-2 py-1 rounded">
+              <span className="bg-[#1A1A1A] border border-[#2A2A2A] px-2 py-1 rounded">
                 {match.zodiacSign}
               </span>
             )}
             {match.mbtiType && (
-              <span className="bg-gray-100 px-2 py-1 rounded">
+              <span className="bg-[#1A1A1A] border border-[#2A2A2A] px-2 py-1 rounded">
                 {match.mbtiType}
               </span>
             )}
           </div>
 
-          {/* Action Buttons - UPDATED SECTION */}
+          {/* Actions */}
           <div className="flex gap-2 mt-auto">
-            {/* View Profile Button */}
-            <Link 
-              to={`/user/${match.userId || match.id}`}
-              className="flex-1"
-            >
-              <button className="w-full bg-gray-200 text-gray-700 font-bold py-2 rounded-lg hover:bg-gray-300 transition-all flex items-center justify-center gap-2">
+            {/* View Profile */}
+            <Link to={`/user/${match.userId || match.id}`} className="flex-1">
+              <button className="w-full bg-[#1A1A1A] border border-[#2A2A2A] text-gray-300 font-semibold py-2 rounded-lg hover:border-[#FF5F00] hover:text-[#FF5F00] transition-all flex items-center justify-center gap-2">
                 View Profile
               </button>
             </Link>
 
-            {/* Like Button */}
-            <Button 
+            {/* Match (Like) */}
+            <Button
               onClick={() => onRequest(match.userId || match.id)}
-              className="flex-1 bg-blue-500 text-white font-bold py-2 rounded-lg hover:shadow-lg transition-all flex items-center justify-center gap-2"
+              className="flex-1 bg-[#FF5F00] text-white font-bold py-2 rounded-lg hover:shadow-[0_0_15px_rgba(255,95,0,0.5)] transition-all flex items-center justify-center gap-2"
             >
               Match
             </Button>

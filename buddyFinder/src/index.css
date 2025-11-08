@@ -1,107 +1,85 @@
-@import "tailwindcss";
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+:root {
+  /* === Core Energy Palette (Nike Style) === */
+  --color-primary: #FF5F00;        /* Energy Orange */
+  --color-primary-hover: #E94E00;  /* Slightly deeper orange */
+  --color-primary-light: #FF8C42;  /* Lighter warm highlight */
+  --color-accent: #F4E000;         /* Yellow-Gold accent */
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  /* === Neutral foundation === */
+  --color-bg: #0B0B0B;             /* Matte black background */
+  --color-surface: #141414;        /* Card base */
+  --color-surface-alt: #1C1C1C;    /* Alternate card */
+  --color-border: #2A2A2A;         /* Subtle border */
+
+  /* === Text system === */
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #BBBBBB;
+  --color-text-muted: #777777;
+
+  /* === Feedback colors === */
+  --color-success: #3CCF4E;
+  --color-error: #E63946;
+  --color-warning: #FFD166;
+
+  /* === Shadows / Transitions === */
+  --shadow-glow: 0 0 20px rgba(255, 95, 0, 0.4);
+  --shadow-hover: 0 0 30px rgba(255, 95, 0, 0.5);
+  --transition-base: all 0.25s ease-in-out;
 }
 
-@keyframes scaleIn {
-  from {
-    transform: scale(0.8);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: 'Inter', 'Poppins', sans-serif;
+  transition: var(--transition-base);
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.3s ease-out;
+/* === Global Components === */
+.card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1.5rem;
+  box-shadow: var(--shadow-glow);
+  transition: var(--transition-base);
 }
 
-.animate-scaleIn {
-  animation: scaleIn 0.3s ease-out;
+.card:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
 }
 
-/* For Webkit browsers (Chrome, Safari, Edge) */
-.scrollbar-thin::-webkit-scrollbar {
+/* === Utility gradients === */
+.bg-gradient-nike {
+  background: linear-gradient(135deg, #FF5F00, #FF8C00, #F4E000);
+}
+
+.text-gradient-nike {
+  background: linear-gradient(90deg, #FF5F00, #FF8C00);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ==== Custom Scrollbar (Dark + Orange Energy) ==== */
+::-webkit-scrollbar {
   width: 8px;
 }
 
-.scrollbar-thin::-webkit-scrollbar-track {
-  background: transparent;
+::-webkit-scrollbar-track {
+  background: #0b0b0b; /* nền tối */
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 10px;
-  transition: background 0.2s;
+::-webkit-scrollbar-thumb {
+  background-color: #2a2a2a; /* xám than */
+  border-radius: 9999px;
+  border: 2px solid #0b0b0b;
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+::-webkit-scrollbar-thumb:hover {
+  background-color: #ff5f00; /* khi hover sang cam neon */
 }
 
-/* Hide scrollbar on mobile for cleaner look */
-@media (max-width: 768px) {
-  .scrollbar-thin::-webkit-scrollbar {
-    display: none;
-  }
-  
-  .scrollbar-thin {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-}
-
-/* Smooth transitions for mode switching */
-.mode-transition {
-  animation: fadeIn 0.3s ease-out;
-}
-
-/* Scrollbar styling for results */
-.scrollbar-thin {
+/* Firefox */
+* {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
-}
-
-.scrollbar-thin::-webkit-scrollbar {
-  width: 6px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 10px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
-}
-
-/* Card hover effects */
-@keyframes slideUp {
-  from {
-    transform: translateY(10px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.card-enter {
-  animation: slideUp 0.3s ease-out;
+  scrollbar-color: #2a2a2a #0b0b0b;
 }

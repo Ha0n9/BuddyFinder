@@ -14,33 +14,23 @@ function PhotoUpload({ userId, currentPhotos, onPhotoUploaded }) {
 
   const fetchUserPhotos = async () => {
     if (!userId) return;
-    
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(
-        'http://localhost:8080/api/profile',
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
+      const response = await axios.get('http://localhost:8080/api/profile', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       const photosJson = response.data.photos;
       let parsedPhotos = [];
-      
       if (photosJson && photosJson !== 'null' && photosJson !== '[]') {
         try {
           parsedPhotos = JSON.parse(photosJson);
         } catch (e) {
           console.error('Failed to parse photos:', e);
-          parsedPhotos = [];
         }
       }
-
       setPhotos(parsedPhotos);
-      
     } catch (error) {
       console.error('Failed to fetch photos:', error);
       showError('Failed to load photos');
@@ -54,52 +44,28 @@ function PhotoUpload({ userId, currentPhotos, onPhotoUploaded }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      showError('Please select an image file');
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      showError('File too large (max 10MB)');
-      return;
-    }
+    if (!file.type.startsWith('image/')) return showError('Please select an image file');
+    if (file.size > 10 * 1024 * 1024) return showError('File too large (max 10MB)');
 
     setUploading(true);
-
     try {
       const formData = new FormData();
       formData.append('file', file);
-
       const token = localStorage.getItem('token');
       const response = await axios.post(
         'http://localhost:8080/api/profile/upload-photo',
         formData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
-        }
+        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
       );
 
       const photosJson = response.data.photos;
-      let newPhotos = [];
-      
-      if (photosJson && photosJson !== 'null' && photosJson !== '[]') {
-        try {
-          newPhotos = JSON.parse(photosJson);
-        } catch (e) {
-          console.error('Failed to parse photos:', e);
-          newPhotos = [];
-        }
-      }
+      const newPhotos =
+        photosJson && photosJson !== 'null' && photosJson !== '[]'
+          ? JSON.parse(photosJson)
+          : [];
 
       setPhotos(newPhotos);
-      
-      if (onPhotoUploaded) {
-        onPhotoUploaded(newPhotos);
-      }
-
+      onPhotoUploaded?.(newPhotos);
       showSuccess('Photo uploaded successfully!');
     } catch (error) {
       console.error('Upload failed:', error);
@@ -117,25 +83,19 @@ function PhotoUpload({ userId, currentPhotos, onPhotoUploaded }) {
       const response = await axios.delete(
         'http://localhost:8080/api/profile/delete-photo',
         {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          data: { photoUrl }
+          headers: { Authorization: `Bearer ${token}` },
+          data: { photoUrl },
         }
       );
 
       const photosJson = response.data.photos;
-      const newPhotos = photosJson && photosJson !== 'null' && photosJson !== '[]' 
-        ? JSON.parse(photosJson) 
-        : [];
-      
+      const newPhotos =
+        photosJson && photosJson !== 'null' && photosJson !== '[]'
+          ? JSON.parse(photosJson)
+          : [];
+
       setPhotos(newPhotos);
-
-      if (onPhotoUploaded) {
-        onPhotoUploaded(newPhotos);
-      }
-
+      onPhotoUploaded?.(newPhotos);
       showSuccess('Photo deleted!');
     } catch (error) {
       console.error('Delete failed:', error);
@@ -146,7 +106,7 @@ function PhotoUpload({ userId, currentPhotos, onPhotoUploaded }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader className="w-8 h-8 text-white animate-spin" />
+        <Loader className="w-8 h-8 text-[#FF5F00] animate-spin" />
       </div>
     );
   }
@@ -157,46 +117,62 @@ function PhotoUpload({ userId, currentPhotos, onPhotoUploaded }) {
         My Photos ({photos.length}/6)
       </h3>
 
+      {/* PHOTO GRID */}
       {photos.length > 0 && (
         <div className="grid grid-cols-3 gap-4 mb-4">
           {photos.map((url, index) => (
-            <div key={index} className="relative aspect-square">
+            <div
+              key={index}
+              className="relative aspect-square overflow-hidden rounded-xl border border-transparent
+                         hover:border-[#FF5F00] hover:shadow-[0_0_25px_rgba(255,95,0,0.6)]
+                         transform hover:scale-[1.04] transition-all duration-300 group"
+            >
+              {/* Image */}
               <img
                 src={url}
                 alt={`Photo ${index + 1}`}
                 className="w-full h-full object-cover rounded-lg"
                 onError={(e) => {
-                  console.error('Image load error:', url);
                   e.target.src = 'https://via.placeholder.com/150?text=Error';
                 }}
               />
+
+              {/* Overlay (mờ nhẹ khi hover) */}
+              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300" />
+
+              {/* Delete Button */}
               <button
                 onClick={() => handleDeletePhoto(url)}
-                className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition-colors"
+                className="absolute top-2 right-2 bg-[#FF5F00] text-black p-1.5 rounded-full
+                          hover:bg-[#E95000] hover:shadow-[0_0_12px_rgba(255,95,0,0.6)]
+                          transition-all duration-200 active:scale-95"
                 title="Delete photo"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" strokeWidth={3} />
               </button>
             </div>
           ))}
         </div>
       )}
 
+      {/* ADD PHOTO */}
       {photos.length < 6 && (
-        <label className="flex items-center justify-center w-full h-32 border-2 border-dashed border-white border-opacity-30 rounded-lg cursor-pointer hover:border-white hover:border-opacity-50 transition-colors bg-white bg-opacity-10">
+        <label
+          className="flex items-center justify-center w-full h-32 border-2 border-dashed border-[#2A2A2A]
+                     rounded-xl cursor-pointer bg-[#1A1A1A]/80 hover:border-[#FF5F00]
+                     hover:shadow-[0_0_25px_rgba(255,95,0,0.6)] transition-all duration-300"
+        >
           <div className="text-center">
             {uploading ? (
               <>
-                <Loader className="w-8 h-8 mx-auto mb-2 text-white animate-spin" />
+                <Loader className="w-8 h-8 mx-auto mb-2 text-[#FF5F00] animate-spin" />
                 <span className="text-white">Uploading...</span>
               </>
             ) : (
               <>
-                <Camera className="w-8 h-8 mx-auto mb-2 text-white" />
-                <span className="text-white">Add Photo</span>
-                <p className="text-white text-xs opacity-70 mt-1">
-                  Max 10MB • JPG, PNG
-                </p>
+                <Camera className="w-8 h-8 mx-auto mb-2 text-[#FF5F00]" />
+                <span className="text-white font-medium">Add Photo</span>
+                <p className="text-gray-400 text-xs mt-1">Max 10MB • JPG, PNG</p>
               </>
             )}
           </div>
@@ -210,14 +186,14 @@ function PhotoUpload({ userId, currentPhotos, onPhotoUploaded }) {
         </label>
       )}
 
+      {/* Hints */}
       {photos.length === 0 && (
-        <p className="text-white opacity-70 text-sm text-center mt-4">
+        <p className="text-gray-400 text-sm text-center mt-4">
           Add photos to your profile to get more matches!
         </p>
       )}
-
       {photos.length >= 6 && (
-        <p className="text-white opacity-70 text-sm text-center mt-4">
+        <p className="text-gray-400 text-sm text-center mt-4">
           Maximum 6 photos reached. Delete a photo to add new ones.
         </p>
       )}

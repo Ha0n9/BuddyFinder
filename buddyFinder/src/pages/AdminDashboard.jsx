@@ -1,29 +1,29 @@
-// src/pages/AdminDashboard.jsx
 import React, { useEffect, useState } from "react";
 import {
   getAdminDashboard,
   getAllUsers,
   getAllActivities,
-  // (tùy backend) getAllRatings
+  // getAllRatings (nếu có)
 } from "../services/adminApi";
 import OverviewCards from "../components/admin/OverviewCards";
 import UsersTable from "../components/admin/UsersTable";
 import ActivitiesTable from "../components/admin/ActivitiesTable";
 import RatingsTable from "../components/admin/RatingsTable";
+import { Search, Download } from "lucide-react";
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [activities, setActivities] = useState([]);
   const [ratings, setRatings] = useState([]);
-  const [activeTab, setActiveTab] = useState("overview"); // overview|users|activities|ratings
+  const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState(null);
+  const [error, setError] = useState(null);
 
   const refreshOverview = async () => {
-    const res = await getAdminDashboard(); // expect { stats, recentUsers, recentActivities, recentRatings? }
+    const res = await getAdminDashboard();
     setStats(res?.stats || res);
-    if (res?.recentUsers)   setUsers(res.recentUsers);
+    if (res?.recentUsers) setUsers(res.recentUsers);
     if (res?.recentActivities) setActivities(res.recentActivities);
     if (res?.recentRatings) setRatings(res.recentRatings);
   };
@@ -39,10 +39,6 @@ const AdminDashboard = () => {
   };
 
   const refreshRatings = async () => {
-    // Nếu có endpoint riêng:
-    // const data = await getAllRatings();
-    // setRatings(Array.isArray(data) ? data : data?.items || []);
-    // Nếu chưa có, tạm dựa vào dashboard:
     await refreshOverview();
   };
 
@@ -51,8 +47,6 @@ const AdminDashboard = () => {
       setLoading(true);
       setError(null);
       await Promise.all([refreshOverview(), refreshUsers(), refreshActivities()]);
-      // Nếu có getAllRatings thì gọi thêm:
-      // await refreshRatings();
     } catch (e) {
       console.error(e);
       setError("Failed to load admin data.");
@@ -65,73 +59,129 @@ const AdminDashboard = () => {
     initialLoad();
   }, []);
 
-  if (loading) return <p className="p-6 text-center">Loading...</p>;
-  if (error)   return <p className="p-6 text-center text-red-600">{error}</p>;
+  if (loading)
+    return (
+      <div className="min-h-screen bg-[#0B0B0B] flex items-center justify-center text-[#FF5F00] text-lg font-bold">
+        Loading Dashboard...
+      </div>
+    );
+  if (error)
+    return (
+      <div className="min-h-screen bg-[#0B0B0B] flex items-center justify-center text-red-500 text-lg font-bold">
+        {error}
+      </div>
+    );
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className="w-64 hidden md:block border-r border-neutral-200/60 dark:border-neutral-800 min-h-screen p-4">
-          <div className="text-xl font-semibold">BuddyFinder Admin</div>
-          <nav className="mt-6 grid gap-1">
-            {["overview", "users", "activities", "ratings"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`text-left px-3 py-2 rounded-xl ${
-                  activeTab === tab
-                    ? "bg-neutral-900 text-white dark:bg-white dark:text-black"
-                    : "hover:bg-neutral-100 dark:hover:bg-neutral-900 text-neutral-700 dark:text-neutral-300"
-                }`}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
-          </nav>
-        </aside>
+    <div className="min-h-screen bg-[#0B0B0B] text-white flex">
+      {/* Sidebar */}
+      <aside className="hidden md:flex flex-col w-64 border-r border-[#2A2A2A] bg-[#111111] shadow-[4px_0_10px_rgba(255,95,0,0.05)]">
+        <div className="p-6 border-b border-[#2A2A2A]">
+          <h1 className="text-xl font-extrabold text-[#FF5F00] tracking-tight">
+            BuddyFinder Admin
+          </h1>
+        </div>
+        <nav className="flex-1 mt-4 space-y-1 p-3">
+          {["overview", "users", "activities", "ratings"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`w-full text-left px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
+                activeTab === tab
+                  ? "bg-[#FF5F00] text-white shadow-[0_0_15px_rgba(255,95,0,0.4)]"
+                  : "text-gray-400 hover:bg-[#1A1A1A] hover:text-[#FF5F00]"
+              }`}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
+        </nav>
 
-        {/* Main */}
-        <main className="flex-1 p-4 md:p-8">
-          <header className="flex items-center justify-between gap-3">
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Admin Dashboard</h1>
-            <div className="flex items-center gap-2">
-              <input placeholder="Search..." className="rounded-xl border px-3 py-2 w-48 md:w-72" />
-              <button className="px-3 py-2 rounded-xl border">Export</button>
+        <div className="p-4 border-t border-[#2A2A2A] text-xs text-gray-500 text-center">
+          © 2025 BuddyFinder
+        </div>
+      </aside>
+
+      {/* Main */}
+      <main className="flex-1 p-6 md:p-10">
+        {/* Header */}
+        <header className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-[#2A2A2A] pb-4 mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-[#FF5F00]">
+            Admin Dashboard
+          </h1>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
+              <input
+                placeholder="Search..."
+                className="w-full bg-[#111111] border border-[#2A2A2A] rounded-xl pl-10 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF5F00]"
+              />
             </div>
-          </header>
+            <button className="flex items-center gap-2 px-4 py-2 bg-[#FF5F00] hover:bg-[#ff7133] rounded-xl text-white font-bold text-sm shadow-[0_2px_8px_rgba(255,95,0,0.4)] transition-all">
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+          </div>
+        </header>
 
-          <section className="mt-6 grid gap-6">
-            {activeTab === "overview" && (
-              <>
-                <OverviewCards stats={stats} />
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div>
-                    <h2 className="text-lg font-semibold mb-3">Recent Users</h2>
-                    <UsersTable users={users.slice(0, 10)} refresh={refreshUsers} />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold mb-3">Recent Activities</h2>
-                    <ActivitiesTable activities={activities.slice(0, 10)} refresh={refreshActivities} />
-                  </div>
+        {/* Content */}
+        <section className="space-y-8">
+          {activeTab === "overview" && (
+            <>
+              <OverviewCards stats={stats} />
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="bg-[#111111] border border-[#2A2A2A] rounded-2xl p-6 shadow-[0_0_10px_rgba(255,95,0,0.05)]">
+                  <h2 className="text-lg font-semibold text-[#FF5F00] mb-4">
+                    Recent Users
+                  </h2>
+                  <UsersTable users={users.slice(0, 10)} refresh={refreshUsers} />
                 </div>
-              </>
-            )}
 
-            {activeTab === "users" && (
+                <div className="bg-[#111111] border border-[#2A2A2A] rounded-2xl p-6 shadow-[0_0_10px_rgba(255,95,0,0.05)]">
+                  <h2 className="text-lg font-semibold text-[#FF5F00] mb-4">
+                    Recent Activities
+                  </h2>
+                  <ActivitiesTable
+                    activities={activities.slice(0, 10)}
+                    refresh={refreshActivities}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === "users" && (
+            <div className="bg-[#111111] border border-[#2A2A2A] rounded-2xl p-6 shadow-[0_0_10px_rgba(255,95,0,0.1)]">
+              <h2 className="text-lg font-semibold text-[#FF5F00] mb-4">
+                All Users
+              </h2>
               <UsersTable users={users} refresh={refreshUsers} />
-            )}
+            </div>
+          )}
 
-            {activeTab === "activities" && (
-              <ActivitiesTable activities={activities} refresh={refreshActivities} />
-            )}
+          {activeTab === "activities" && (
+            <div className="bg-[#111111] border border-[#2A2A2A] rounded-2xl p-6 shadow-[0_0_10px_rgba(255,95,0,0.1)]">
+              <h2 className="text-lg font-semibold text-[#FF5F00] mb-4">
+                All Activities
+              </h2>
+              <ActivitiesTable
+                activities={activities}
+                refresh={refreshActivities}
+              />
+            </div>
+          )}
 
-            {activeTab === "ratings" && (
+          {activeTab === "ratings" && (
+            <div className="bg-[#111111] border border-[#2A2A2A] rounded-2xl p-6 shadow-[0_0_10px_rgba(255,95,0,0.1)]">
+              <h2 className="text-lg font-semibold text-[#FF5F00] mb-4">
+                Ratings Overview
+              </h2>
               <RatingsTable ratings={ratings} refresh={refreshRatings} />
-            )}
-          </section>
-        </main>
-      </div>
+            </div>
+          )}
+        </section>
+      </main>
     </div>
   );
 };

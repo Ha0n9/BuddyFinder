@@ -1,4 +1,3 @@
-// src/pages/SearchPage.jsx
 import { useState, useEffect } from 'react';
 import { searchBuddies, likeUser, passUser } from '../services/api';
 import SwipeCard from '../components/search/SwipeCard';
@@ -44,12 +43,10 @@ function SearchPage() {
     if (currentIndex >= users.length) return;
 
     const currentUser = users[currentIndex];
-    
+
     try {
       if (direction === 'like') {
         const response = await likeUser(currentUser.userId || currentUser.id);
-        console.log('Like response:', response.data);
-        
         if (response.data.message && response.data.message.includes('match')) {
           setMatchedUser(currentUser);
           setShowMatchPopup(true);
@@ -57,13 +54,12 @@ function SearchPage() {
         }
       } else {
         await passUser(currentUser.userId || currentUser.id);
-        console.log('Passed:', currentUser.name);
       }
     } catch (error) {
       console.error('Swipe error:', error);
     }
 
-    setCurrentIndex(prev => prev + 1);
+    setCurrentIndex((prev) => prev + 1);
   };
 
   const handleLike = () => handleSwipe('like');
@@ -77,7 +73,6 @@ function SearchPage() {
     try {
       await likeUser(userId);
       showSuccess('Buddy request sent!');
-      // Refresh the list
       fetchUsers(filters);
     } catch (error) {
       console.error('Failed to send request:', error);
@@ -90,32 +85,32 @@ function SearchPage() {
     fetchUsers(searchFilters);
   };
 
-  // Loading state
+  // 🔸 Loading Screen
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-400 via-purple-500 to-orange-400 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0B0B0B] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-white mx-auto mb-4"></div>
-          <p className="text-white text-xl font-bold">Finding your perfect buddy...</p>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#FF5F00] mx-auto mb-4"></div>
+          <p className="text-[#FF5F00] text-xl font-bold">Finding your perfect buddy...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-400 via-purple-500 to-orange-400 py-8 px-4">
+    <div className="min-h-screen bg-[#0B0B0B] py-8 px-4 text-white">
       {/* Match Popup */}
       {showMatchPopup && matchedUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 animate-fadeIn">
-          <div className="bg-white rounded-3xl p-8 max-w-md mx-4 text-center animate-scaleIn">
-            <div className="text-6xl mb-4">🎉</div>
-            <h2 className="text-3xl font-bold text-pink-500 mb-2">It's a Match!</h2>
-            <p className="text-gray-600 mb-6">
-              You and {matchedUser.name} liked each other!
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 animate-fadeIn">
+          <div className="bg-[#1A1A1A] rounded-3xl p-8 max-w-md mx-4 text-center animate-scaleIn border border-[#FF5F00]/40">
+            <div className="text-6xl mb-4">🔥</div>
+            <h2 className="text-3xl font-bold text-[#FF5F00] mb-2">It's a Match!</h2>
+            <p className="text-gray-300 mb-6">
+              You and <span className="font-bold text-[#FF5F00]">{matchedUser.name}</span> liked each other!
             </p>
             <button
               onClick={() => setShowMatchPopup(false)}
-              className="bg-gradient-to-r from-pink-500 to-orange-500 text-white px-8 py-3 rounded-full font-bold hover:shadow-lg transition-all"
+              className="bg-[#FF5F00] hover:bg-[#ff7133] text-white px-8 py-3 rounded-full font-bold shadow-[0_4px_12px_rgba(255,95,0,0.4)] transition-all"
             >
               Keep Swiping
             </button>
@@ -124,20 +119,19 @@ function SearchPage() {
       )}
 
       <div className="max-w-7xl mx-auto">
-        {/* Header with Mode Toggle */}
+        {/* Header + Mode Toggle */}
         <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-white mb-4">
+          <h1 className="text-3xl font-bold text-[#FF5F00] mb-4">
             Find Your Buddy
           </h1>
-          
-          {/* Mode Toggle */}
+
           <div className="flex justify-center gap-3 mb-4">
             <button
               onClick={() => setMode('swipe')}
               className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all ${
                 mode === 'swipe'
-                  ? 'bg-white text-pink-500 shadow-lg'
-                  : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
+                  ? 'bg-[#FF5F00] text-white shadow-[0_0_15px_rgba(255,95,0,0.5)]'
+                  : 'bg-[#1A1A1A] text-gray-300 hover:text-white border border-[#2A2A2A]'
               }`}
             >
               <Zap className="w-5 h-5" />
@@ -147,8 +141,8 @@ function SearchPage() {
               onClick={() => setMode('traditional')}
               className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all ${
                 mode === 'traditional'
-                  ? 'bg-white text-pink-500 shadow-lg'
-                  : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
+                  ? 'bg-[#FF5F00] text-white shadow-[0_0_15px_rgba(255,95,0,0.5)]'
+                  : 'bg-[#1A1A1A] text-gray-300 hover:text-white border border-[#2A2A2A]'
               }`}
             >
               <Sliders className="w-5 h-5" />
@@ -157,32 +151,32 @@ function SearchPage() {
           </div>
 
           {mode === 'swipe' && (
-            <p className="text-white opacity-80">
+            <p className="text-gray-400 text-sm">
               {users.length - currentIndex} buddies available
             </p>
           )}
         </div>
 
-        {/* Swipe Mode */}
+        {/* SWIPE MODE */}
         {mode === 'swipe' && (
           <>
             {currentIndex >= users.length ? (
               <div className="flex items-center justify-center">
-                <div className="text-center">
-                  <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-3xl p-8 max-w-md mx-auto">
-                    <Sparkles className="w-20 h-20 text-white mx-auto mb-4" />
-                    <h2 className="text-3xl font-bold text-white mb-4">That's Everyone!</h2>
-                    <p className="text-white opacity-90 mb-6">
-                      You've seen all available buddies. Check back later for more matches!
-                    </p>
-                    <button 
-                      onClick={handleRestart}
-                      className="bg-white text-pink-500 px-8 py-4 rounded-full font-bold hover:shadow-2xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center mx-auto"
-                    >
-                      <RotateCcw className="mr-2 w-5 h-5" />
-                      Start Over
-                    </button>
-                  </div>
+                <div className="bg-[#1A1A1A] rounded-3xl p-8 text-center border border-[#2A2A2A]">
+                  <Sparkles className="w-16 h-16 text-[#FF5F00] mx-auto mb-4" />
+                  <h2 className="text-2xl font-bold text-white mb-2">
+                    That's Everyone!
+                  </h2>
+                  <p className="text-gray-400 mb-6">
+                    You've seen all available buddies. Check back later for more matches.
+                  </p>
+                  <button
+                    onClick={handleRestart}
+                    className="bg-[#FF5F00] hover:bg-[#ff7133] text-white px-8 py-3 rounded-full font-bold shadow-[0_4px_12px_rgba(255,95,0,0.4)] transition-all flex items-center justify-center mx-auto"
+                  >
+                    <RotateCcw className="mr-2 w-5 h-5" />
+                    Start Over
+                  </button>
                 </div>
               </div>
             ) : (
@@ -198,45 +192,36 @@ function SearchPage() {
                         zIndex: 10 - index,
                         scale: 1 - index * 0.05,
                         y: index * 10,
-                        opacity: 1 - index * 0.2
+                        opacity: 1 - index * 0.2,
                       }}
                     />
                   ))}
                 </div>
 
-                {/* Action Buttons */}
+                {/* Buttons */}
                 <div className="flex justify-center gap-8">
-                  <button
-                    onClick={handlePass}
-                    className="group relative"
-                  >
-                    <div className="w-16 h-16 bg-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform duration-200">
-                      <X className="w-8 h-8 text-red-500" strokeWidth={3} />
+                  <button onClick={handlePass} className="group relative">
+                    <div className="w-16 h-16 bg-[#1A1A1A] border-2 border-[#FF5F00] rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-200">
+                      <X className="w-8 h-8 text-[#FF5F00]" strokeWidth={3} />
                     </div>
-                    <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs text-gray-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
                       Pass
                     </span>
                   </button>
 
-                  <button
-                    onClick={handleLike}
-                    className="group relative"
-                  >
-                    <div className="w-20 h-20 bg-gradient-to-r from-pink-500 to-red-500 rounded-full shadow-2xl flex items-center justify-center hover:scale-110 transition-transform duration-200">
+                  <button onClick={handleLike} className="group relative">
+                    <div className="w-20 h-20 bg-[#FF5F00] hover:bg-[#ff7133] rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(255,95,0,0.4)] hover:scale-110 transition-transform duration-200">
                       <Heart className="w-10 h-10 text-white" fill="currentColor" strokeWidth={2} />
                     </div>
-                    <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs text-gray-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
                       Like
                     </span>
                   </button>
                 </div>
 
-                {/* Instructions */}
                 {currentIndex === 0 && (
-                  <div className="mt-8 text-center">
-                    <p className="text-white opacity-80 text-sm">
-                      💡 Swipe right to like, left to pass
-                    </p>
+                  <div className="mt-8 text-center text-gray-500 text-sm">
+                    💡 Swipe right to like, left to pass
                   </div>
                 )}
               </div>
@@ -244,27 +229,25 @@ function SearchPage() {
           </>
         )}
 
-        {/* Traditional Search Mode */}
+        {/* TRADITIONAL MODE */}
         {mode === 'traditional' && (
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Search Filters Sidebar */}
             <div className="md:col-span-1">
               <SearchFilters onSearch={handleSearch} />
             </div>
 
-            {/* Results */}
             <div className="md:col-span-2">
-              <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-3xl p-6">
-                <h2 className="text-2xl font-bold text-white mb-6">
+              <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-3xl p-6">
+                <h2 className="text-2xl font-bold text-[#FF5F00] mb-6">
                   Matches ({filteredUsers.length})
                 </h2>
 
                 {filteredUsers.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Sparkles className="w-16 h-16 text-white opacity-50 mx-auto mb-4" />
-                    <p className="text-white opacity-80 text-lg">No matches found</p>
-                    <p className="text-white opacity-60 text-sm mt-2">
-                      Try adjusting your search filters
+                  <div className="text-center py-12 text-gray-400">
+                    <Sparkles className="w-16 h-16 text-[#FF5F00] mx-auto mb-4 opacity-70" />
+                    <p className="text-lg">No matches found</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Try adjusting your filters
                     </p>
                   </div>
                 ) : (
