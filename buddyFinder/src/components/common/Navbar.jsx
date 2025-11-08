@@ -43,6 +43,9 @@ function Navbar() {
               <Link to="/rating" className="text-black hover:underline hover:text-gray-200 transition-all duration-200">
                 Rating
               </Link>
+              <Link to="/pricing" className="text-black hover:underline hover:text-gray-200 transition-all duration-200">
+                Pricing
+              </Link>
               {user?.isAdmin && (
                 <Link to="/admin" className="text-black hover:underline hover:text-gray-200 transition-all duration-200 font-bold">
                   Admin

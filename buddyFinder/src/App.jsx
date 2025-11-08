@@ -11,6 +11,8 @@ import ChatPage from './pages/ChatPage';
 import RatingPage from './pages/RatingPage';
 import AdminDashboard from './pages/AdminDashboard';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import PricingPage from "./pages/PricingPage";
+import CheckoutPage from "./pages/CheckoutPage";
 
 function App() {
   const { isAuthenticated } = useAuthStore();
@@ -58,6 +60,12 @@ function App() {
             <AdminDashboard />
           </ProtectedRoute>
         } />
+
+        <Route path="/pricing" element={
+          <PricingPage />} />
+          
+        <Route path="/checkout" element={
+          <CheckoutPage />} />
       </Routes>
     </>
   );
