@@ -13,6 +13,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import PricingPage from "./pages/PricingPage";
 import CheckoutPage from "./pages/CheckoutPage";
+import UserProfileView from './pages/UserProfileView';
 
 function App() {
   const { isAuthenticated } = useAuthStore();
@@ -66,6 +67,12 @@ function App() {
           
         <Route path="/checkout" element={
           <CheckoutPage />} />
+
+          <Route path="/user/:userId" element={
+            <ProtectedRoute>
+              <UserProfileView />
+            </ProtectedRoute>
+          } />
       </Routes>
     </>
   );

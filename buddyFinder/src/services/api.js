@@ -78,20 +78,12 @@ export const getMessages = (matchId) => api.get(`/chat/messages/${matchId}`);
 // Rating
 export const submitRating = (data) => api.post('/ratings', data);
 export const getRatings = (userId) => api.get(`/ratings/user/${userId}`);
-export async function createRating(payload) {
-  const res = await fetch("/api/ratings", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-    },
-    body: JSON.stringify(payload),
-  });
+export const createRating = async (payload) => {
+  const response = await api.post('/ratings', payload);
+  return response.data;
+};
 
-  if (!res.ok) throw new Error("Failed to create rating");
-  return res.json();
-}
-
+export const getUserById = (userId) => api.get(`/users/${userId}`);
 
 export default api;
 
