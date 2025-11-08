@@ -1,6 +1,9 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import Navbar from './components/common/Navbar';
+import { useEffect } from 'react';
+import websocketService from './services/websocket';
+import { useNotificationStore } from './store/notificationStore';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -16,7 +19,28 @@ import CheckoutPage from "./pages/CheckoutPage";
 import UserProfileView from './pages/UserProfileView';
 
 function App() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
+  const { addNotification } = useNotificationStore();
+
+   useEffect(() => {
+    if (isAuthenticated && user?.userId) {
+      const token = localStorage.getItem('token');
+      
+      websocketService.connect(token).then(() => {
+        websocketService.subscribeToNotifications(user.userId, (notification) => {
+          addNotification(notification);
+        });
+      }).catch(err => {
+        console.error('Failed to connect to notification WebSocket:', err);
+      });
+    }
+
+    return () => {
+      if (isAuthenticated) {
+        websocketService.disconnect();
+      }
+    };
+  }, [isAuthenticated, user?.userId]);
 
   return (
     <>

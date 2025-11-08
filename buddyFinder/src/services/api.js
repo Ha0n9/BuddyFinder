@@ -85,6 +85,12 @@ export const createRating = async (payload) => {
 
 export const getUserById = (userId) => api.get(`/users/${userId}`);
 
+// === Notifications ===
+export const getNotifications = () => api.get('/notifications');
+export const markNotificationAsRead = (notiId) => api.put(`/notifications/${notiId}/read`);
+export const markAllNotificationsAsRead = () => api.put('/notifications/read-all');
+export const deleteNotification = (notiId) => api.delete(`/notifications/${notiId}`);
+
 export default api;
 
 

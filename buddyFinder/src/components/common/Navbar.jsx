@@ -1,5 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import NotificationCenter from '../notifications/NotificationCenter';
 
 function Navbar() {
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -12,7 +13,6 @@ function Navbar() {
     navigate('/login');
   };
 
-  // Ẩn navbar trên trang landing nếu chưa đăng nhập
   if (!isAuthenticated && location.pathname === '/') return null;
 
   return (
@@ -52,6 +52,8 @@ function Navbar() {
                 <NavItem to="/admin" label="Admin" highlight />
               )}
 
+              <NotificationCenter />
+              
               <button
                 onClick={handleLogout}
                 className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] font-medium transition-all duration-200"

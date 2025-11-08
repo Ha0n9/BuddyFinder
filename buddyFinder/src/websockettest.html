@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test - BuddyFinder</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .user-panel {
+            border: 2px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .user1 { border-color: #3b82f6; }
+        .user2 { border-color: #ef4444; }
+        h2 { margin-top: 0; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            border: none;
+            color: white;
+            font-weight: bold;
+        }
+        .connect-btn { background: #10b981; }
+        .send-btn { background: #3b82f6; }
+        .disconnect-btn { background: #ef4444; }
+        input { padding: 8px; width: 300px; margin: 5px; }
+        .log {
+            background: #f3f4f6;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .status { 
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .connected { background: #d1fae5; color: #065f46; }
+        .disconnected { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <h1>🧪 WebSocket Test - BuddyFinder Real-Time Chat</h1>
+    <p>Test if messages broadcast to all connected users</p>
+
+    <!-- User 1 Panel (Alex) -->
+    <div class="user-panel user1">
+        <h2>👤 User 1 (Alex) - userId: 6</h2>
+        <div>
+            Status: <span id="status1" class="status disconnected">Disconnected</span>
+        </div>
+        <div>
+            <input type="text" id="token1" placeholder="JWT Token for User 1" style="width: 500px;">
+        </div>
+        <div>
+            <button class="connect-btn" onclick="connectUser1()">Connect</button>
+            <button class="disconnect-btn" onclick="disconnectUser1()">Disconnect</button>
+        </div>
+        <div>
+            <input type="number" id="matchId1" placeholder="Match ID" value="8">
+            <button class="send-btn" onclick="subscribeUser1()">Subscribe to Match</button>
+        </div>
+        <div>
+            <input type="text" id="message1" placeholder="Type message...">
+            <button class="send-btn" onclick="sendMessageUser1()">Send Message</button>
+        </div>
+        <div class="log" id="log1"></div>
+    </div>
+
+    <!-- User 2 Panel (Emma) -->
+    <div class="user-panel user2">
+        <h2>👤 User 2 (Emma) - userId: 8</h2>
+        <div>
+            Status: <span id="status2" class="status disconnected">Disconnected</span>
+        </div>
+        <div>
+            <input type="text" id="token2" placeholder="JWT Token for User 2" style="width: 500px;">
+        </div>
+        <div>
+            <button class="connect-btn" onclick="connectUser2()">Connect</button>
+            <button class="disconnect-btn" onclick="disconnectUser2()">Disconnect</button>
+        </div>
+        <div>
+            <input type="number" id="matchId2" placeholder="Match ID" value="8">
+            <button class="send-btn" onclick="subscribeUser2()">Subscribe to Match</button>
+        </div>
+        <div>
+            <input type="text" id="message2" placeholder="Type message...">
+            <button class="send-btn" onclick="sendMessageUser2()">Send Message</button>
+        </div>
+        <div class="log" id="log2"></div>
+    </div>
+
+    <script>
+        let client1 = null;
+        let client2 = null;
+        let subscription1 = null;
+        let subscription2 = null;
+
+        function log(userId, message, color = '#000') {
+            const logEl = document.getElementById(`log${userId}`);
+            const time = new Date().toLocaleTimeString();
+            logEl.innerHTML += `<div style="color: ${color}">[${time}] ${message}</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function updateStatus(userId, connected) {
+            const statusEl = document.getElementById(`status${userId}`);
+            statusEl.textContent = connected ? 'Connected' : 'Disconnected';
+            statusEl.className = connected ? 'status connected' : 'status disconnected';
+        }
+
+        // ============= USER 1 (ALEX) =============
+        function connectUser1() {
+            const token = document.getElementById('token1').value;
+            if (!token) {
+                alert('Please enter JWT token for User 1');
+                return;
+            }
+
+            log(1, '🔌 Connecting to WebSocket...', '#3b82f6');
+
+            const socket = new SockJS('http://localhost:8080/ws');
+            client1 = new StompJs.Client({
+                webSocketFactory: () => socket,
+                connectHeaders: { Authorization: `Bearer ${token}` },
+                debug: (str) => log(1, `DEBUG: ${str}`, '#6b7280'),
+                onConnect: () => {
+                    log(1, '✅ Connected!', '#10b981');
+                    updateStatus(1, true);
+                },
+                onDisconnect: () => {
+                    log(1, '❌ Disconnected', '#ef4444');
+                    updateStatus(1, false);
+                },
+                onStompError: (frame) => {
+                    log(1, `❌ Error: ${frame.headers.message}`, '#ef4444');
+                }
+            });
+
+            client1.activate();
+        }
+
+        function subscribeUser1() {
+            if (!client1 || !client1.connected) {
+                alert('Please connect first!');
+                return;
+            }
+
+            const matchId = document.getElementById('matchId1').value;
+            const destination = `/topic/match/${matchId}`;
+            
+            log(1, `📡 Subscribing to ${destination}`, '#3b82f6');
+
+            subscription1 = client1.subscribe(destination, (message) => {
+                const data = JSON.parse(message.body);
+                log(1, `📨 RECEIVED: ${JSON.stringify(data)}`, '#10b981');
+            });
+
+            log(1, '✅ Subscribed!', '#10b981');
+        }
+
+        function sendMessageUser1() {
+            if (!client1 || !client1.connected) {
+                alert('Please connect first!');
+                return;
+            }
+
+            const matchId = document.getElementById('matchId1').value;
+            const content = document.getElementById('message1').value;
+            
+            if (!content) {
+                alert('Please enter a message');
+                return;
+            }
+
+            const payload = {
+                senderId: 6, // Alex's userId
+                content: content
+            };
+
+            log(1, `📤 SENDING: ${JSON.stringify(payload)}`, '#3b82f6');
+
+            client1.publish({
+                destination: `/app/chat/${matchId}`,
+                body: JSON.stringify(payload)
+            });
+
+            document.getElementById('message1').value = '';
+        }
+
+        function disconnectUser1() {
+            if (client1) {
+                client1.deactivate();
+                log(1, '🔌 Disconnected', '#ef4444');
+            }
+        }
+
+        // ============= USER 2 (EMMA) =============
+        function connectUser2() {
+            const token = document.getElementById('token2').value;
+            if (!token) {
+                alert('Please enter JWT token for User 2');
+                return;
+            }
+
+            log(2, '🔌 Connecting to WebSocket...', '#ef4444');
+
+            const socket = new SockJS('http://localhost:8080/ws');
+            client2 = new StompJs.Client({
+                webSocketFactory: () => socket,
+                connectHeaders: { Authorization: `Bearer ${token}` },
+                debug: (str) => log(2, `DEBUG: ${str}`, '#6b7280'),
+                onConnect: () => {
+                    log(2, '✅ Connected!', '#10b981');
+                    updateStatus(2, true);
+                },
+                onDisconnect: () => {
+                    log(2, '❌ Disconnected', '#ef4444');
+                    updateStatus(2, false);
+                },
+                onStompError: (frame) => {
+                    log(2, `❌ Error: ${frame.headers.message}`, '#ef4444');
+                }
+            });
+
+            client2.activate();
+        }
+
+        function subscribeUser2() {
+            if (!client2 || !client2.connected) {
+                alert('Please connect first!');
+                return;
+            }
+
+            const matchId = document.getElementById('matchId2').value;
+            const destination = `/topic/match/${matchId}`;
+            
+            log(2, `📡 Subscribing to ${destination}`, '#ef4444');
+
+            subscription2 = client2.subscribe(destination, (message) => {
+                const data = JSON.parse(message.body);
+                log(2, `📨 RECEIVED: ${JSON.stringify(data)}`, '#10b981');
+            });
+
+            log(2, '✅ Subscribed!', '#10b981');
+        }
+
+        function sendMessageUser2() {
+            if (!client2 || !client2.connected) {
+                alert('Please connect first!');
+                return;
+            }
+
+            const matchId = document.getElementById('matchId2').value;
+            const content = document.getElementById('message2').value;
+            
+            if (!content) {
+                alert('Please enter a message');
+                return;
+            }
+
+            const payload = {
+                senderId: 8, // Emma's userId
+                content: content
+            };
+
+            log(2, `📤 SENDING: ${JSON.stringify(payload)}`, '#ef4444');
+
+            client2.publish({
+                destination: `/app/chat/${matchId}`,
+                body: JSON.stringify(payload)
+            });
+
+            document.getElementById('message2').value = '';
+        }
+
+        function disconnectUser2() {
+            if (client2) {
+                client2.deactivate();
+                log(2, '🔌 Disconnected', '#ef4444');
+            }
+        }
+    </script>
+</body>
+</html>

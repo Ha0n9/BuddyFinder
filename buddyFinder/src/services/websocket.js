@@ -6,34 +6,61 @@ class WebSocketService {
   constructor() {
     this.client = null;
     this.subscriptions = new Map();
+    this.connected = false;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 5;
   }
 
   connect(token) {
     return new Promise((resolve, reject) => {
+      console.log('🔌 Attempting WebSocket connection...');
+      
       this.client = new Client({
-        webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+        webSocketFactory: () => {
+          const socket = new SockJS('http://localhost:8080/ws');
+          console.log('🌐 SockJS socket created');
+          return socket;
+        },
         
         connectHeaders: {
           Authorization: `Bearer ${token}`
         },
 
         debug: (str) => {
-          console.log('STOMP:', str);
+          console.log('🔍 STOMP:', str);
         },
 
-        onConnect: () => {
-          console.log('✅ WebSocket Connected');
+        reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000,
+
+        onConnect: (frame) => {
+          console.log('✅ WebSocket Connected!', frame);
+          this.connected = true;
+          this.reconnectAttempts = 0;
           resolve();
         },
 
+        onDisconnect: () => {
+          console.log('⚠️ WebSocket Disconnected');
+          this.connected = false;
+        },
+
         onStompError: (frame) => {
-          console.error('❌ STOMP Error:', frame);
+          console.error('❌ STOMP Error:', frame.headers['message']);
+          console.error('Details:', frame.body);
+          this.connected = false;
           reject(frame);
         },
 
         onWebSocketError: (error) => {
           console.error('❌ WebSocket Error:', error);
-          reject(error);
+          this.connected = false;
+        },
+
+        onWebSocketClose: (event) => {
+          console.log('🔌 WebSocket Closed:', event.reason);
+          this.connected = false;
         }
       });
 
@@ -41,55 +68,125 @@ class WebSocketService {
     });
   }
 
+  isConnected() {
+    return this.connected && this.client?.connected;
+  }
+
+  /**
+   * Subscribe to match chat
+   */
   subscribeToMatch(matchId, callback) {
-    if (!this.client?.connected) {
-      console.warn('WebSocket not connected');
+    if (!this.isConnected()) {
+      console.warn('⚠️ Cannot subscribe: WebSocket not connected');
       return null;
     }
 
-    const destination = `/topic/match/${matchId}`;
-    
-    const subscription = this.client.subscribe(destination, (message) => {
-      const parsedMessage = JSON.parse(message.body);
-      callback(parsedMessage);
-    });
+    // Unsubscribe existing subscription if any
+    this.unsubscribeFromMatch(matchId);
 
-    this.subscriptions.set(matchId, subscription);
-    console.log(`✅ Subscribed to match ${matchId}`);
+    const destination = `/topic/match/${matchId}`;
+    console.log(`📡 Subscribing to: ${destination}`);
     
-    return subscription;
+    try {
+      const subscription = this.client.subscribe(destination, (message) => {
+        console.log('📨 Received message:', message.body);
+        try {
+          const parsedMessage = JSON.parse(message.body);
+          console.log('✅ Parsed message:', parsedMessage);
+          callback(parsedMessage);
+        } catch (error) {
+          console.error('❌ Failed to parse message:', error);
+        }
+      });
+
+      this.subscriptions.set(`match-${matchId}`, subscription);
+      console.log(`✅ Successfully subscribed to match ${matchId}`);
+      
+      return subscription;
+    } catch (error) {
+      console.error('❌ Failed to subscribe:', error);
+      return null;
+    }
   }
 
-  sendMessage(matchId, senderId, content) {
-    if (!this.client?.connected) {
-      console.warn('Cannot send: WebSocket not connected');
-      return;
+  /**
+   * Subscribe to notifications
+   */
+  subscribeToNotifications(userId, callback) {
+    if (!this.isConnected()) {
+      console.warn('⚠️ Cannot subscribe to notifications: WebSocket not connected');
+      return null;
     }
 
-    this.client.publish({
-      destination: `/app/chat/${matchId}`,
-      body: JSON.stringify({
-        senderId,
-        content
-      })
-    });
+    const destination = `/topic/notifications/${userId}`;
+    console.log(`📡 Subscribing to notifications: ${destination}`);
+    
+    try {
+      const subscription = this.client.subscribe(destination, (message) => {
+        const notification = JSON.parse(message.body);
+        console.log('🔔 Received notification:', notification);
+        callback(notification);
+      });
+
+      this.subscriptions.set(`notifications-${userId}`, subscription);
+      console.log(`✅ Successfully subscribed to notifications for user ${userId}`);
+      return subscription;
+    } catch (error) {
+      console.error('❌ Failed to subscribe to notifications:', error);
+      return null;
+    }
+  }
+
+  /**
+   * ✅ FIX: Send message via WebSocket (not just REST API)
+   */
+  sendMessage(matchId, senderId, content) {
+    if (!this.isConnected()) {
+      console.error('❌ Cannot send: WebSocket not connected');
+      throw new Error('WebSocket not connected');
+    }
+
+    const destination = `/app/chat/${matchId}`;
+    const payload = {
+      senderId,
+      content
+    };
+
+    console.log(`📤 Sending message to ${destination}:`, payload);
+
+    try {
+      this.client.publish({
+        destination: destination,
+        body: JSON.stringify(payload)
+      });
+      console.log('✅ Message sent via WebSocket');
+    } catch (error) {
+      console.error('❌ Failed to send message:', error);
+      throw error;
+    }
   }
 
   unsubscribeFromMatch(matchId) {
-    const subscription = this.subscriptions.get(matchId);
+    const key = `match-${matchId}`;
+    const subscription = this.subscriptions.get(key);
     if (subscription) {
       subscription.unsubscribe();
-      this.subscriptions.delete(matchId);
-      console.log(`Unsubscribed from match ${matchId}`);
+      this.subscriptions.delete(key);
+      console.log(`✅ Unsubscribed from match ${matchId}`);
     }
   }
 
   disconnect() {
+    console.log('🔌 Disconnecting WebSocket...');
     if (this.client) {
-      this.subscriptions.forEach(sub => sub.unsubscribe());
+      this.subscriptions.forEach((sub, key) => {
+        console.log(`Unsubscribing from ${key}`);
+        sub.unsubscribe();
+      });
       this.subscriptions.clear();
       this.client.deactivate();
-      console.log('WebSocket disconnected');
+      this.connected = false;
+      console.log('✅ WebSocket disconnected');
     }
   }
 }
