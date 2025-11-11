@@ -91,6 +91,16 @@ export const markNotificationAsRead = (notiId) => api.put(`/notifications/${noti
 export const markAllNotificationsAsRead = () => api.put('/notifications/read-all');
 export const deleteNotification = (notiId) => api.delete(`/notifications/${notiId}`);
 
+// === Referral ===
+export async function getReferralInfo() {
+  const token = localStorage.getItem("token");
+  const res = await fetch("http://localhost:8080/api/referral/info", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error("Failed to fetch referral info");
+  return res.json();
+}
+
 export default api;
 
 

@@ -17,12 +17,13 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import PricingPage from "./pages/PricingPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import UserProfileView from './pages/UserProfileView';
+import RefundPage from './pages/RefundPage';
 
 function App() {
   const { isAuthenticated, user } = useAuthStore();
   const { addNotification } = useNotificationStore();
 
-   useEffect(() => {
+  useEffect(() => {
     if (isAuthenticated && user?.userId) {
       const token = localStorage.getItem('token');
       
@@ -42,6 +43,20 @@ function App() {
     };
   }, [isAuthenticated, user?.userId]);
 
+  // 🔥 Admin routing - Redirect to admin dashboard
+  if (isAuthenticated && user?.isAdmin) {
+    return (
+      <>
+        <Navbar />
+        <Routes>
+          <Route path="/admin/*" element={<AdminDashboard />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </Routes>
+      </>
+    );
+  }
+
+  // 🎯 Regular user routing
   return (
     <>
       <Navbar />
@@ -79,24 +94,21 @@ function App() {
             <RatingPage />
           </ProtectedRoute>
         } />
-        
-        <Route path="/admin" element={
-          <ProtectedRoute requireAdmin={true}>
-            <AdminDashboard />
+
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+
+        <Route path="/user/:userId" element={
+          <ProtectedRoute>
+            <UserProfileView />
           </ProtectedRoute>
         } />
 
-        <Route path="/pricing" element={
-          <PricingPage />} />
-          
-        <Route path="/checkout" element={
-          <CheckoutPage />} />
-
-          <Route path="/user/:userId" element={
-            <ProtectedRoute>
-              <UserProfileView />
-            </ProtectedRoute>
-          } />
+        <Route path="/refund" element={
+          <ProtectedRoute>
+            <RefundPage />
+          </ProtectedRoute>
+        } />
       </Routes>
     </>
   );

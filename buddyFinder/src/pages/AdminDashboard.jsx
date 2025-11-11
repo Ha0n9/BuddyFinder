@@ -3,12 +3,13 @@ import {
   getAdminDashboard,
   getAllUsers,
   getAllActivities,
-  // getAllRatings (nếu có)
 } from "../services/adminApi";
 import OverviewCards from "../components/admin/OverviewCards";
 import UsersTable from "../components/admin/UsersTable";
 import ActivitiesTable from "../components/admin/ActivitiesTable";
 import RatingsTable from "../components/admin/RatingsTable";
+import RefundsTable from "../components/admin/RefundsTable";
+import VerificationsTable from "../components/admin/VerificationsTable";
 import { Search, Download } from "lucide-react";
 
 const AdminDashboard = () => {
@@ -19,6 +20,8 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refunds, setRefunds] = useState([]);
+  const [verifications, setVerifications] = useState([]);
 
   const refreshOverview = async () => {
     const res = await getAdminDashboard();
@@ -42,11 +45,35 @@ const AdminDashboard = () => {
     await refreshOverview();
   };
 
+  const refreshRefunds = async () => {
+    const token = localStorage.getItem("token");
+    const res = await fetch("http://localhost:8080/api/admin/refunds/pending", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    setRefunds(data || []);
+  };
+
+  const refreshVerifications = async () => {
+    const token = localStorage.getItem("token");
+    const res = await fetch("http://localhost:8080/api/verification/admin/pending", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    setVerifications(data || []);
+  };
+
   const initialLoad = async () => {
     try {
       setLoading(true);
       setError(null);
-      await Promise.all([refreshOverview(), refreshUsers(), refreshActivities()]);
+      await Promise.all([
+        refreshOverview(), 
+        refreshUsers(), 
+        refreshActivities(),
+        refreshRefunds(),
+        refreshVerifications()
+      ]);
     } catch (e) {
       console.error(e);
       setError("Failed to load admin data.");
@@ -82,7 +109,7 @@ const AdminDashboard = () => {
           </h1>
         </div>
         <nav className="flex-1 mt-4 space-y-1 p-3">
-          {["overview", "users", "activities", "ratings"].map((tab) => (
+          {["overview", "users", "activities", "ratings", "refunds", "verifications"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -178,6 +205,24 @@ const AdminDashboard = () => {
                 Ratings Overview
               </h2>
               <RatingsTable ratings={ratings} refresh={refreshRatings} />
+            </div>
+          )}
+
+          {activeTab === "refunds" && (
+            <div className="bg-[#111111] border border-[#2A2A2A] rounded-2xl p-6 shadow-[0_0_10px_rgba(255,95,0,0.1)]">
+              <h2 className="text-lg font-semibold text-[#FF5F00] mb-4">
+                Refund Requests
+              </h2>
+              <RefundsTable refunds={refunds} refresh={refreshRefunds} />
+            </div>
+          )}
+
+          {activeTab === "verifications" && (
+            <div className="bg-[#111111] border border-[#2A2A2A] rounded-2xl p-6 shadow-[0_0_10px_rgba(255,95,0,0.1)]">
+              <h2 className="text-lg font-semibold text-[#FF5F00] mb-4">
+                Account Verifications
+              </h2>
+              <VerificationsTable verifications={verifications} refresh={refreshVerifications} />
             </div>
           )}
         </section>
