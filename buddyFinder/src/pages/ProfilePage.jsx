@@ -5,10 +5,11 @@ import ProfileEdit from '../components/profile/ProfileEdit';
 import PhotoUpload from '../components/profile/PhotoUpload';
 import VerificationModal from '../components/profile/VerificationModal';
 import InviteFriendModal from '../components/profile/InviteFriendModal';
+import DeleteAccountModal from '../components/profile/DeleteAccountModal';
+import { DollarSign, Shield, CheckCircle, Users, Trash2 } from 'lucide-react';
 // import { Users } from 'lucide-react';
 import { getProfile } from '../services/api';
 import { useAuthStore } from '../store/authStore';
-import { DollarSign, Shield, CheckCircle, Users } from 'lucide-react';
 
 function ProfilePage() {
   const { user } = useAuthStore();
@@ -18,6 +19,7 @@ function ProfilePage() {
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -203,6 +205,23 @@ function ProfilePage() {
                   </div>
                 )}
 
+                {/* Delete Account Section - GDPR Compliance */}
+                <div className="bg-[#1A1A1A]/70 backdrop-blur-md border border-red-500/30 rounded-3xl shadow-md p-6">
+                  <h2 className="text-xl font-bold mb-4 text-white tracking-tight flex items-center gap-2">
+                    🗑️ Danger Zone
+                  </h2>
+                  <p className="text-sm text-gray-400 mb-4">
+                    Once you delete your account, there is no going back. All your data will be permanently removed in accordance with GDPR.
+                  </p>
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="w-full flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-xl font-bold shadow-[0_4px_12px_rgba(239,68,68,0.4)] transition-all"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                    Delete Account
+                  </button>
+                </div>
+
                 {/* Invite Friends Section */}
                 <div className="bg-[#1A1A1A]/70 backdrop-blur-md border border-[#2A2A2A] rounded-3xl shadow-md p-6">
                   <h2 className="text-xl font-bold mb-4 text-white tracking-tight flex items-center gap-2">
@@ -249,6 +268,11 @@ function ProfilePage() {
         isOpen={showVerificationModal}
         onClose={() => setShowVerificationModal(false)}
         onSuccess={handleVerificationSuccess}
+      />
+
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
       />
     </>
   );

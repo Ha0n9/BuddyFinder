@@ -9,7 +9,7 @@ const api = axios.create({
   },
 });
 
-// Request interceptor
+// ========== REQUEST INTERCEPTOR ==========
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -18,64 +18,96 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor - Handle 401
+// ========== RESPONSE INTERCEPTOR ==========
+let lastToastMessage = null;
+let lastToastTime = 0;
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status;
+    const message = error.response?.data?.message || '';
+    const url = error.config?.url || '';
+    const now = Date.now();
+
+    // chống hiện toast trùng trong vòng 1 giây
+    const maybeToast = (msg) => {
+      if (msg === lastToastMessage && now - lastToastTime < 1000) return;
+      lastToastMessage = msg;
+      lastToastTime = now;
+      showError(msg);
+    };
+
+    // ❗ KHÔNG hiện toast cho login/register (để LoginForm xử lý riêng)
+    if (url.includes('/auth/login') || url.includes('/auth/register')) {
+      return Promise.reject(error);
+    }
+
+    // ====== PHÂN LOẠI TOAST ======
+    if (status === 401) {
       console.error('🔐 Authentication failed:', error.response.data);
-      
-      // Clear auth data
       localStorage.removeItem('token');
-      
-      // Don't redirect if already on auth pages
       const currentPath = window.location.pathname;
       if (!currentPath.includes('/login') && !currentPath.includes('/register')) {
-        showError('Session expired. Please login again.');
-        
-        // Delay redirect to show toast
+        maybeToast('Session expired. Please login again.');
         setTimeout(() => {
           window.location.href = '/login';
         }, 1000);
       }
-    } else if (error.response?.status >= 500) {
-      showError('Server error. Please try again later.');
-    } else if (error.response?.data?.message) {
-      showError(error.response.data.message);
+    } else if (status === 403) {
+      // Chỉ hiển thị “Access denied” nếu có token (đã login)
+      const token = localStorage.getItem('token');
+      if (!token) return Promise.reject(error);
+
+      // Nếu URL là admin → hiện “Access denied”
+      if (url.includes('/admin/')) {
+        maybeToast('Access denied: Admin privileges required.');
+      } else if (message.toLowerCase().includes('banned')) {
+        // Nếu bị ban
+        maybeToast('Your account has been banned. Please contact support.');
+      } else {
+        maybeToast(message || 'Access denied.');
+      }
+    } else if (status >= 500) {
+      maybeToast('Server error. Please try again later.');
+    } else if (message) {
+      maybeToast(message);
     }
-    
+
     return Promise.reject(error);
   }
 );
 
-// Auth
+// ================== AUTH ==================
 export const login = (data) => api.post('/auth/login', data);
 export const register = (data) => api.post('/auth/register', data);
 
-// User & Profile
+// ================== USER & PROFILE ==================
 export const getProfile = () => api.get('/profile');
 export const getUserProfile = () => api.get('/users/profile');
 export const updateProfile = (data) => api.put('/users/profile', data);
+export const deleteAccount = (password) =>
+  api.delete('/users/account', { data: { password } });
 
-// Search
+// ================== SEARCH ==================
 export const searchBuddies = (params) => api.get('/search/potential', { params });
 
-// Match
+// ================== MATCH ==================
 export const likeUser = (toUserId) => api.post('/matches/like', { toUserId });
 export const passUser = (toUserId) => api.post('/matches/pass', { toUserId });
 export const getMatches = () => api.get('/matches');
 
-// Activities
+// ================== ACTIVITIES ==================
 export const postActivity = (data) => api.post('/activities', data);
 export const getActivities = () => api.get('/activities');
 export const joinActivity = (activityId) => api.post(`/activities/${activityId}/join`);
 export const deleteActivity = (activityId) => api.delete(`/activities/${activityId}`);
 
-// Chat
+// ================== CHAT ==================
 export const sendMessage = (data) => api.post('/chat/send', data);
 export const getMessages = (matchId) => api.get(`/chat/messages/${matchId}`);
 
-// Rating
+// ================== RATING ==================
 export const submitRating = (data) => api.post('/ratings', data);
 export const getRatings = (userId) => api.get(`/ratings/user/${userId}`);
 export const createRating = async (payload) => {
@@ -85,23 +117,24 @@ export const createRating = async (payload) => {
 
 export const getUserById = (userId) => api.get(`/users/${userId}`);
 
-// === Notifications ===
+// ================== NOTIFICATIONS ==================
 export const getNotifications = () => api.get('/notifications');
 export const markNotificationAsRead = (notiId) => api.put(`/notifications/${notiId}/read`);
 export const markAllNotificationsAsRead = () => api.put('/notifications/read-all');
 export const deleteNotification = (notiId) => api.delete(`/notifications/${notiId}`);
 
-// === Referral ===
+// ================== REFERRAL ==================
 export async function getReferralInfo() {
-  const token = localStorage.getItem("token");
-  const res = await fetch("http://localhost:8080/api/referral/info", {
+  const token = localStorage.getItem('token');
+  const res = await fetch('http://localhost:8080/api/referral/info', {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!res.ok) throw new Error("Failed to fetch referral info");
+  if (!res.ok) throw new Error('Failed to fetch referral info');
   return res.json();
 }
 
 export default api;
+
 
 
 // ============== ONLY FOR MOCKING PURPOSES ================

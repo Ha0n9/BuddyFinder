@@ -100,7 +100,7 @@ export default function RefundsTable({ refunds, refresh }) {
                       <p className="text-xs text-gray-500">{refund.userEmail}</p>
                     </div>
                   </td>
-                  <td className="p-3 font-bold text-[#FF5F00]">${refund.amount}</td>
+                  <td className="p-3 font-bold text-[#FF5F00]">${refund.originalAmount}</td>
                   <td className="p-3">
                     <span className="text-xs">{refund.reasonDescription || refund.reason}</span>
                   </td>
@@ -133,7 +133,7 @@ export default function RefundsTable({ refunds, refresh }) {
                     )}
                     {refund.status !== 'PENDING' && (
                       <span className="text-xs text-gray-500">
-                        {refund.processedBy && `by ${refund.processedBy}`}
+                        {refund.processedByName && `by ${refund.processedByName}`}
                       </span>
                     )}
                   </td>
@@ -154,7 +154,7 @@ export default function RefundsTable({ refunds, refresh }) {
             
             <div className="mb-4">
               <p className="text-gray-400 text-sm mb-2">User: {selectedRefund?.userName}</p>
-              <p className="text-gray-400 text-sm mb-2">Amount: ${selectedRefund?.amount}</p>
+              <p className="text-gray-400 text-sm mb-2">Amount: ${selectedRefund?.originalAmount}</p>
               <p className="text-gray-400 text-sm">Reason: {selectedRefund?.reasonDescription}</p>
             </div>
 
