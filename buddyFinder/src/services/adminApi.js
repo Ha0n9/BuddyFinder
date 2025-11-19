@@ -255,6 +255,15 @@ export const deleteActivity = async (activityId) => {
 };
 
 // ============ RATINGS ============
+export const getAllRatings = async () => {
+  try {
+    const res = await api.get("/admin/ratings");
+    return res.data;
+  } catch (error) {
+    handleAdminError(error, "fetching all ratings");
+  }
+};
+
 export const deleteRating = async (id) => {
   try {
     const res = await api.delete(`/admin/ratings/${id}`);
@@ -262,6 +271,36 @@ export const deleteRating = async (id) => {
     return res.data;
   } catch (error) {
     handleAdminError(error, "deleting rating");
+  }
+};
+
+// ============ REPORTS ============
+export const getAllReports = async () => {
+  try {
+    const res = await api.get("/admin/reports");
+    return res.data;
+  } catch (error) {
+    handleAdminError(error, "fetching reports");
+  }
+};
+
+export const updateReportStatus = async (reportId, payload) => {
+  try {
+    const res = await api.post(`/admin/reports/${reportId}/status`, payload);
+    showSuccess("Report updated successfully.");
+    return res.data;
+  } catch (error) {
+    handleAdminError(error, "updating report status");
+  }
+};
+
+export const banReportedUser = async (reportId, payload) => {
+  try {
+    const res = await api.post(`/admin/reports/${reportId}/ban`, payload);
+    showSuccess("User banned successfully.");
+    return res.data;
+  } catch (error) {
+    handleAdminError(error, "banning user");
   }
 };
 

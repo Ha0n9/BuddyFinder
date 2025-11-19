@@ -138,7 +138,7 @@ class WebSocketService {
   }
 
   /**
-   * ✅ FIX: Send message via WebSocket (not just REST API)
+   * Send message via WebSocket (1-1 chat)
    */
   sendMessage(matchId, senderId, content) {
     if (!this.isConnected()) {
@@ -173,6 +173,91 @@ class WebSocketService {
       subscription.unsubscribe();
       this.subscriptions.delete(key);
       console.log(`✅ Unsubscribed from match ${matchId}`);
+    }
+  }
+
+  /**
+   * Subscribe to group chat (activity room)
+   */
+  subscribeToGroup(roomId, callback) {
+    if (!this.isConnected()) {
+      console.warn('⚠️ Cannot subscribe: WebSocket not connected');
+      return null;
+    }
+
+    const key = `group-${roomId}`;
+
+    // Unsubscribe existing subscription if any
+    const existing = this.subscriptions.get(key);
+    if (existing) {
+      existing.unsubscribe();
+      this.subscriptions.delete(key);
+      console.log(`♻️ Re-subscribing to group ${roomId}`);
+    }
+
+    const destination = `/topic/group/${roomId}`;
+    console.log(`📡 Subscribing to group chat: ${destination}`);
+
+    try {
+      const subscription = this.client.subscribe(destination, (message) => {
+        console.log('📨 Group message received:', message.body);
+
+        try {
+          const parsed = JSON.parse(message.body);
+          console.log('✅ Parsed group message:', parsed);
+          callback(parsed);
+        } catch (err) {
+          console.error('❌ Failed to parse group chat message:', err);
+        }
+      });
+
+      this.subscriptions.set(key, subscription);
+      console.log(`✅ Subscribed to group ${roomId}`);
+
+      return subscription;
+    } catch (err) {
+      console.error('❌ Failed to subscribe to group:', err);
+      return null;
+    }
+  }
+
+  /**
+   * Unsubscribe from a group chat room
+   */
+  unsubscribeFromGroup(roomId) {
+    const key = `group-${roomId}`;
+    const subscription = this.subscriptions.get(key);
+
+    if (subscription) {
+      subscription.unsubscribe();
+      this.subscriptions.delete(key);
+      console.log(`🛑 Unsubscribed from group room ${roomId}`);
+    }
+  }
+
+  /**
+   * Send message to group chat via WebSocket
+   */
+  sendGroupMessage(roomId, senderId, content) {
+    if (!this.isConnected()) {
+      console.error('❌ Cannot send group message: WebSocket not connected');
+      throw new Error('WebSocket not connected');
+    }
+
+    const destination = `/app/group/${roomId}`;
+    const payload = { senderId, content };
+
+    console.log(`📤 Sending group message to ${destination}:`, payload);
+
+    try {
+      this.client.publish({
+        destination: destination,
+        body: JSON.stringify(payload)
+      });
+      console.log('✅ Group message sent');
+    } catch (error) {
+      console.error('❌ Failed to send group message:', error);
+      throw error;
     }
   }
 

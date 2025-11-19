@@ -3,6 +3,8 @@ import {
   getAdminDashboard,
   getAllUsers,
   getAllActivities,
+  getAllRatings,
+  getAllReports,
 } from "../services/adminApi";
 import OverviewCards from "../components/admin/OverviewCards";
 import UsersTable from "../components/admin/UsersTable";
@@ -10,7 +12,9 @@ import ActivitiesTable from "../components/admin/ActivitiesTable";
 import RatingsTable from "../components/admin/RatingsTable";
 import RefundsTable from "../components/admin/RefundsTable";
 import VerificationsTable from "../components/admin/VerificationsTable";
+import ReportsTable from "../components/admin/ReportsTable";
 import { Search, Download } from "lucide-react";
+import { showError, showSuccess } from "../utils/toast";
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
@@ -22,13 +26,14 @@ const AdminDashboard = () => {
   const [error, setError] = useState(null);
   const [refunds, setRefunds] = useState([]);
   const [verifications, setVerifications] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [exportingFormat, setExportingFormat] = useState(null);
 
   const refreshOverview = async () => {
     const res = await getAdminDashboard();
     setStats(res?.stats || res);
     if (res?.recentUsers) setUsers(res.recentUsers);
     if (res?.recentActivities) setActivities(res.recentActivities);
-    if (res?.recentRatings) setRatings(res.recentRatings);
   };
 
   const refreshUsers = async () => {
@@ -42,7 +47,8 @@ const AdminDashboard = () => {
   };
 
   const refreshRatings = async () => {
-    await refreshOverview();
+    const data = await getAllRatings();
+    setRatings(Array.isArray(data) ? data : data?.items || []);
   };
 
   const refreshRefunds = async () => {
@@ -63,6 +69,11 @@ const AdminDashboard = () => {
     setVerifications(data || []);
   };
 
+  const refreshReports = async () => {
+    const data = await getAllReports();
+    setReports(Array.isArray(data) ? data : data?.items || []);
+  };
+
   const initialLoad = async () => {
     try {
       setLoading(true);
@@ -71,8 +82,10 @@ const AdminDashboard = () => {
         refreshOverview(), 
         refreshUsers(), 
         refreshActivities(),
+        refreshRatings(),
         refreshRefunds(),
-        refreshVerifications()
+        refreshVerifications(),
+        refreshReports()
       ]);
     } catch (e) {
       console.error(e);
@@ -85,6 +98,84 @@ const AdminDashboard = () => {
   useEffect(() => {
     initialLoad();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "ratings" && ratings.length === 0) {
+      refreshRatings();
+    }
+    if (activeTab === "refunds" && refunds.length === 0) {
+      refreshRefunds();
+    }
+    if (activeTab === "verifications" && verifications.length === 0) {
+      refreshVerifications();
+    }
+    if (activeTab === "reports" && reports.length === 0) {
+      refreshReports();
+    }
+  }, [activeTab, ratings.length, refunds.length, verifications.length, reports.length]);
+
+  const handleExportUsers = async (format) => {
+    if (exportingFormat) return;
+    try {
+      setExportingFormat(format);
+      const data = await getAllUsers();
+      const list = Array.isArray(data) ? data : data?.items || [];
+
+      if (!list.length) {
+        showError("No user data available to export");
+        return;
+      }
+
+      let blob;
+      let filename;
+      if (format === "json") {
+        blob = new Blob([JSON.stringify(list, null, 2)], {
+          type: "application/json",
+        });
+        filename = "buddyfinder-users.json";
+      } else {
+        const fields = [
+          "userId",
+          "name",
+          "email",
+          "age",
+          "location",
+          "tier",
+          "isVerified",
+          "isActive",
+        ];
+        const header = fields.join(",");
+        const rows = list.map((user) =>
+          fields
+            .map((field) => {
+              const value = user?.[field];
+              if (value === undefined || value === null) return "";
+              const stringValue = String(value).replace(/"/g, '""');
+              return `"${stringValue}"`;
+            })
+            .join(",")
+        );
+        const csv = [header, ...rows].join("\n");
+        blob = new Blob([csv], { type: "text/csv" });
+        filename = "buddyfinder-users.csv";
+      }
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showSuccess("User data exported successfully");
+    } catch (error) {
+      console.error("Failed to export users", error);
+      showError("Failed to export users");
+    } finally {
+      setExportingFormat(null);
+    }
+  };
 
   if (loading)
     return (
@@ -109,19 +200,37 @@ const AdminDashboard = () => {
           </h1>
         </div>
         <nav className="flex-1 mt-4 space-y-1 p-3">
-          {["overview", "users", "activities", "ratings", "refunds", "verifications"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`w-full text-left px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
-                activeTab === tab
-                  ? "bg-[#FF5F00] text-white shadow-[0_0_15px_rgba(255,95,0,0.4)]"
-                  : "text-gray-400 hover:bg-[#1A1A1A] hover:text-[#FF5F00]"
-              }`}
-            >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
-          ))}
+          {["overview", "users", "activities", "ratings", "refunds", "verifications", "reports"].map((tab) => {
+            const badgeCount =
+              tab === "refunds"
+                ? refunds.filter((r) => r.status === "PENDING").length
+                : tab === "verifications"
+                ? verifications.filter((v) => v.status === "PENDING").length
+                : tab === "reports"
+                ? reports.filter((r) => r.status === "OPEN").length
+                : 0;
+
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`w-full text-left px-4 py-3 rounded-xl font-medium transition-all duration-200 ${
+                  activeTab === tab
+                    ? "bg-[#FF5F00] text-white shadow-[0_0_15px_rgba(255,95,0,0.4)]"
+                    : "text-gray-400 hover:bg-[#1A1A1A] hover:text-[#FF5F00]"
+                }`}
+              >
+                <span className="flex items-center justify-between gap-3">
+                  <span>{tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
+                  {!!badgeCount && (
+                    <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold bg-red-500 text-white rounded-full">
+                      {badgeCount}
+                    </span>
+                  )}
+                </span>
+              </button>
+            );
+          })}
         </nav>
 
         <div className="p-4 border-t border-[#2A2A2A] text-xs text-gray-500 text-center">
@@ -144,9 +253,21 @@ const AdminDashboard = () => {
                 className="w-full bg-[#111111] border border-[#2A2A2A] rounded-xl pl-10 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF5F00]"
               />
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 bg-[#FF5F00] hover:bg-[#ff7133] rounded-xl text-white font-bold text-sm shadow-[0_2px_8px_rgba(255,95,0,0.4)] transition-all">
+            <button
+              onClick={() => handleExportUsers("json")}
+              disabled={!!exportingFormat}
+              className="flex items-center gap-2 px-4 py-2 bg-[#FF5F00] hover:bg-[#ff7133] rounded-xl text-white font-bold text-sm shadow-[0_2px_8px_rgba(255,95,0,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <Download className="w-4 h-4" />
-              Export
+              JSON
+            </button>
+            <button
+              onClick={() => handleExportUsers("csv")}
+              disabled={!!exportingFormat}
+              className="flex items-center gap-2 px-4 py-2 bg-[#FF5F00] hover:bg-[#ff7133] rounded-xl text-white font-bold text-sm shadow-[0_2px_8px_rgba(255,95,0,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-4 h-4" />
+              CSV
             </button>
           </div>
         </header>
@@ -223,6 +344,15 @@ const AdminDashboard = () => {
                 Account Verifications
               </h2>
               <VerificationsTable verifications={verifications} refresh={refreshVerifications} />
+            </div>
+          )}
+
+          {activeTab === "reports" && (
+            <div className="bg-[#111111] border border-[#2A2A2A] rounded-2xl p-6 shadow-[0_0_10px_rgba(255,95,0,0.1)]">
+              <h2 className="text-lg font-semibold text-[#FF5F00] mb-4">
+                User Reports
+              </h2>
+              <ReportsTable reports={reports} refresh={refreshReports} />
             </div>
           )}
         </section>

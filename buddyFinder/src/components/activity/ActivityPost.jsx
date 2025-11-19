@@ -1,9 +1,10 @@
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { postActivity } from '../../services/api';
+import { getActivityChatRoom, postActivity } from '../../services/api';
 import Button from '../common/Button';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { showError, showSuccess } from '../../utils/toast';
 
 const schema = yup.object({
@@ -17,6 +18,7 @@ const schema = yup.object({
 
 function ActivityPost({ onActivityPosted }) {
   const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate();
   const { register, handleSubmit, formState: { errors }, reset } = useForm({
     resolver: yupResolver(schema),
   });
@@ -24,10 +26,20 @@ function ActivityPost({ onActivityPosted }) {
   const onSubmit = async (data) => {
     setSubmitting(true);
     try {
-      await postActivity(data);
+      const response = await postActivity(data);
       showSuccess('Activity posted successfully!');
       reset();
       if (onActivityPosted) onActivityPosted();
+
+      try {
+        const chatRoom = await getActivityChatRoom(response.data.activityId);
+        const roomId = chatRoom.data?.roomId;
+        if (roomId) {
+          navigate(`/chat?type=group&room=${roomId}`);
+        }
+      } catch (chatError) {
+        console.error('Failed to open group chat after posting activity:', chatError);
+      }
     } catch (error) {
       console.error('Activity posting failed:', error);
       showError(error.response?.data?.message || 'Failed to post activity');

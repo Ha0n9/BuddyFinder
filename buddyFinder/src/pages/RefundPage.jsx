@@ -15,7 +15,6 @@ function RefundPage() {
   // Form state
   const [formData, setFormData] = useState({
     refundMethod: 'ORIGINAL_PAYMENT',
-    originalAmount: '',
     refundType: 'FULL',
     reason: 'NOT_SATISFIED',
     description: '',
@@ -87,11 +86,6 @@ function RefundPage() {
     e.preventDefault();
 
     // Validation
-    if (!formData.originalAmount || parseFloat(formData.originalAmount) <= 0) {
-      showError('Please enter a valid amount');
-      return;
-    }
-
     if (!formData.description.trim()) {
       showError('Please provide a description');
       return;
@@ -132,7 +126,6 @@ function RefundPage() {
       // Reset form
       setFormData({
         refundMethod: 'ORIGINAL_PAYMENT',
-        originalAmount: '',
         refundType: 'FULL',
         reason: 'NOT_SATISFIED',
         description: '',

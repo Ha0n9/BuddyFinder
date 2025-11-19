@@ -24,13 +24,15 @@ function SearchPage() {
     fetchUsers();
   }, []);
 
-  const fetchUsers = async (searchFilters = {}) => {
+  const fetchUsers = async (searchFilters = {}, reset = true) => {
     setLoading(true);
     try {
       const response = await searchBuddies(searchFilters);
       setUsers(response.data);
       setFilteredUsers(response.data);
-      setCurrentIndex(0);
+      if (reset) {
+        setCurrentIndex(0);
+      }
     } catch (error) {
       console.error('Failed to fetch users:', error);
       showError('Failed to load users');
@@ -60,6 +62,11 @@ function SearchPage() {
     }
 
     setCurrentIndex((prev) => prev + 1);
+
+    const remaining = users.length - (currentIndex + 1);
+    if (remaining <= 2) {
+      fetchUsers(filters, false);
+    }
   };
 
   const handleLike = () => handleSwipe('like');

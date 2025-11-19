@@ -37,33 +37,44 @@ export default function InviteFriendModal({ isOpen, onClose }) {
           <p className="text-gray-400 text-center">Loading...</p>
         ) : referral ? (
           <>
-            <div className="mb-4">
-              <p className="text-gray-400 text-sm mb-1">Your unique referral link:</p>
-              <div className="flex items-center justify-between bg-[#0F0F0F] border border-[#2A2A2A] rounded-lg p-2">
-                <span className="text-sm text-gray-300 truncate">
-                  {referral.referralLink}
-                </span>
-                <button
-                  onClick={() => copyToClipboard(referral.referralLink)}
-                  className="ml-2 text-[#FF5F00] hover:text-[#ff7133]"
-                >
-                  <Copy size={16} />
-                </button>
+            {referral.featureLocked ? (
+              <div className="mb-4 bg-green-500/10 border border-green-500/40 rounded-xl p-4 text-sm text-white">
+                <p className="font-semibold mb-1">Referral challenge completed 🎉</p>
+                <p className="text-gray-300">
+                  You've already invited 3 friends and unlocked the reward. This perk can only be used once.
+                </p>
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="mb-4">
+                  <p className="text-gray-400 text-sm mb-1">Your unique referral link:</p>
+                  <div className="flex items-center justify-between bg-[#0F0F0F] border border-[#2A2A2A] rounded-lg p-2">
+                    <span className="text-sm text-gray-300 truncate">
+                      {referral.referralLink}
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard(referral.referralLink)}
+                      className="ml-2 text-[#FF5F00] hover:text-[#ff7133]"
+                    >
+                      <Copy size={16} />
+                    </button>
+                  </div>
+                </div>
 
-            <div className="mb-4">
-              <p className="text-gray-400 text-sm mb-1">Your referral code:</p>
-              <div className="flex items-center justify-between bg-[#0F0F0F] border border-[#2A2A2A] rounded-lg p-2">
-                <span className="text-sm text-gray-300">{referral.referralCode}</span>
-                <button
-                  onClick={() => copyToClipboard(referral.referralCode)}
-                  className="ml-2 text-[#FF5F00] hover:text-[#ff7133]"
-                >
-                  <Copy size={16} />
-                </button>
-              </div>
-            </div>
+                <div className="mb-4">
+                  <p className="text-gray-400 text-sm mb-1">Your referral code:</p>
+                  <div className="flex items-center justify-between bg-[#0F0F0F] border border-[#2A2A2A] rounded-lg p-2">
+                    <span className="text-sm text-gray-300">{referral.referralCode}</span>
+                    <button
+                      onClick={() => copyToClipboard(referral.referralCode)}
+                      className="ml-2 text-[#FF5F00] hover:text-[#ff7133]"
+                    >
+                      <Copy size={16} />
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
 
             <div className="text-sm text-gray-400 mb-4">
               <p>Invited: {referral.totalInvited}</p>

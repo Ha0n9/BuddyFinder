@@ -21,6 +21,7 @@ function UserProfileView() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const isViewingSelf = currentUser?.userId?.toString() === userId?.toString();
 
   useEffect(() => {
     fetchUser();
@@ -51,6 +52,7 @@ function UserProfileView() {
   };
 
   const handleLike = async () => {
+    if (isViewingSelf) return;
     try {
       const response = await likeUser(userId);
       if (response.data.message && response.data.message.includes('match')) {
@@ -67,6 +69,7 @@ function UserProfileView() {
   };
 
   const handlePass = () => {
+    if (isViewingSelf) return;
     navigate('/search');
   };
 
@@ -92,8 +95,14 @@ function UserProfileView() {
     );
   }
 
-  const photos = parsePhotos(user.photos);
-  const hasPhotos = photos.length > 0;
+  const galleryPhotos = parsePhotos(user.photos);
+  const displayPhotos =
+    galleryPhotos.length > 0
+      ? galleryPhotos
+      : user.profilePictureUrl
+      ? [user.profilePictureUrl]
+      : [];
+  const hasPhotos = displayPhotos.length > 0;
 
   return (
     <div className="min-h-screen bg-[#0B0B0B] py-10 px-4 text-white">
@@ -119,7 +128,7 @@ function UserProfileView() {
               {hasPhotos ? (
                 <>
                   <img
-                    src={photos[currentPhotoIndex]}
+                    src={displayPhotos[currentPhotoIndex]}
                     alt={user.name}
                     className="w-full h-full object-cover"
                     onError={(e) => {
@@ -129,10 +138,10 @@ function UserProfileView() {
                   />
 
                   {/* Dots */}
-                  {photos.length > 1 && (
+                  {displayPhotos.length > 1 && (
                     <>
                       <div className="absolute top-4 left-0 right-0 flex justify-center gap-1">
-                        {photos.map((_, i) => (
+                        {displayPhotos.map((_, i) => (
                           <div
                             key={i}
                             className={`h-1.5 rounded-full transition-all ${
@@ -155,14 +164,14 @@ function UserProfileView() {
                           className="w-1/2 cursor-pointer"
                           onClick={() =>
                             setCurrentPhotoIndex((i) =>
-                              Math.min(photos.length - 1, i + 1)
+                            Math.min(displayPhotos.length - 1, i + 1)
                             )
                           }
                         />
                       </div>
 
                       <div className="absolute bottom-4 right-4 bg-black bg-opacity-60 px-2 py-1 rounded-full text-xs">
-                        {currentPhotoIndex + 1}/{photos.length}
+                        {currentPhotoIndex + 1}/{displayPhotos.length}
                       </div>
                     </>
                   )}
@@ -202,22 +211,24 @@ function UserProfileView() {
             </div>
 
             {/* Buttons */}
-            <div className="p-6 flex gap-4">
-              <button
-                onClick={handlePass}
-                className="flex-1 bg-[#1A1A1A] text-gray-400 py-3 rounded-xl font-bold hover:text-white hover:bg-[#2A2A2A] transition-all flex items-center justify-center gap-2"
-              >
-                <X className="w-5 h-5" />
-                Skip
-              </button>
-              <button
-                onClick={handleLike}
-                className="flex-1 bg-[#FF5F00] hover:bg-[#ff7133] text-white py-3 rounded-xl font-bold shadow-[0_0_15px_rgba(255,95,0,0.4)] transition-all flex items-center justify-center gap-2"
-              >
-                <Zap className="w-5 h-5" />
-                Connect
-              </button>
-            </div>
+            {!isViewingSelf && (
+              <div className="p-6 flex gap-4">
+                <button
+                  onClick={handlePass}
+                  className="flex-1 bg-[#1A1A1A] text-gray-400 py-3 rounded-xl font-bold hover:text-white hover:bg-[#2A2A2A] transition-all flex items-center justify-center gap-2"
+                >
+                  <X className="w-5 h-5" />
+                  Skip
+                </button>
+                <button
+                  onClick={handleLike}
+                  className="flex-1 bg-[#FF5F00] hover:bg-[#ff7133] text-white py-3 rounded-xl font-bold shadow-[0_0_15px_rgba(255,95,0,0.4)] transition-all flex items-center justify-center gap-2"
+                >
+                  <Zap className="w-5 h-5" />
+                  Connect
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Info Section */}

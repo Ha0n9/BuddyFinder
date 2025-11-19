@@ -1,13 +1,11 @@
 // src/components/admin/ActivitiesTable.jsx
 // import React from "React";
 import { deleteActivity } from "../../services/adminApi";
-import { showSuccess } from "../../utils/toast";
 
 const ActivitiesTable = ({ activities, refresh }) => {
   const handleDelete = async (id) => {
     if (!confirm("Delete this activity?")) return;
     await deleteActivity(id);
-    showSuccess("Activity deleted");
     refresh();
   };
 

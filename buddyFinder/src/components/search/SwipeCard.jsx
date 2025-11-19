@@ -8,7 +8,13 @@ function SwipeCard({ user, onSwipe, style }) {
   const opacity = useTransform(x, [-200, -150, 0, 150, 200], [0, 1, 1, 1, 0]);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
-  const photos = parsePhotos(user.photos);
+  const galleryPhotos = parsePhotos(user.photos);
+  const photos =
+    galleryPhotos.length > 0
+      ? galleryPhotos
+      : user.profilePictureUrl
+      ? [user.profilePictureUrl]
+      : [];
   const hasPhotos = photos.length > 0;
 
   const handleDragEnd = (_, info) => {

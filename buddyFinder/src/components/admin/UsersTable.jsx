@@ -5,27 +5,23 @@ import {
   unbanUser,
   deleteUser,
 } from "../../services/adminApi";
-import { showSuccess } from "../../utils/toast";
 
 const UsersTable = ({ users, refresh }) => {
   const handleBan = async (id) => {
     if (!window.confirm("Are you sure you want to ban this user?")) return;
     await banUser(id);
-    showSuccess("User banned successfully");
     refresh();
   };
 
   const handleUnban = async (id) => {
     if (!window.confirm("Unban this user?")) return;
     await unbanUser(id);
-    showSuccess("User unbanned successfully");
     refresh();
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this user permanently?")) return;
     await deleteUser(id);
-    showSuccess("User deleted successfully");
     refresh();
   };
 

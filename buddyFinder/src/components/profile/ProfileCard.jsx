@@ -3,20 +3,35 @@ import { useAuthStore } from '../../store/authStore';
 import { Link } from 'react-router-dom';
 import { Edit, MapPin, Heart, Calendar } from 'lucide-react';
 
-function ProfileCard() {
+function ProfileCard({ verificationStatus }) {
   const { user } = useAuthStore();
 
   if (!user) return <p className="text-white">Loading...</p>;
 
+  const isVerified = verificationStatus?.status === 'APPROVED';
+
   return (
     <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-3xl p-6">
-      {/* Header with Edit Button */}
-      <div className="flex justify-between items-start mb-6">
-        <div>
+      {/* Header with Avatar and Edit Button */}
+      <div className="flex items-center gap-4 mb-6">
+        <div className="w-20 h-20 rounded-2xl bg-white/10 overflow-hidden flex-shrink-0 border border-white/20">
+          {user.profilePictureUrl ? (
+            <img
+              src={user.profilePictureUrl}
+              alt={user.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-white text-3xl font-bold">
+              {user.name?.charAt(0)?.toUpperCase() || '?'}
+            </div>
+          )}
+        </div>
+        <div className="flex-1">
           <h2 className="text-3xl font-bold text-white mb-1">{user.name}</h2>
           <p className="text-white opacity-80">{user.email}</p>
         </div>
-        <Link 
+        <Link
           to="/profile/edit"
           className="p-3 bg-white bg-opacity-30 rounded-full hover:bg-opacity-40 transition-colors"
         >
@@ -74,7 +89,7 @@ function ProfileCard() {
       </div>
 
       {/* Verification Badge */}
-      {user.isVerified && (
+      {isVerified && (
         <div className="mt-6 bg-green-500 bg-opacity-20 border border-green-300 rounded-lg p-3 flex items-center">
           <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
           <span className="text-white text-sm font-medium">Verified Account</span>

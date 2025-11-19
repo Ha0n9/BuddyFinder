@@ -9,7 +9,10 @@ import { useState } from 'react';
 import { showError, showSuccess } from '../../utils/toast';
 
 const schema = yup.object({
-  email: yup.string().email('Invalid email').required('Email is required'),
+  email: yup
+    .string()
+    .matches(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'Invalid email')
+    .required('Email is required'),
   password: yup
     .string()
     .min(6, 'Password must be at least 6 characters')
@@ -40,21 +43,21 @@ function LoginForm() {
     } catch (error) {
       console.error('Login failed:', error);
 
-      // ✅ Lấy thông tin lỗi
-      const msg = error.response?.data?.message?.toLowerCase() || '';
+      const rawMessage = error.response?.data?.message || '';
+      const msg = rawMessage.toLowerCase();
       const status = error.response?.status;
 
-      // ✅ Ưu tiên kiểm tra tình huống bị ban (403)
-      if (status === 403 || msg.includes('banned')) {
+      if ((status === 403 && msg.includes('banned')) || msg.includes('banned')) {
         showError('Your account has been banned. Please contact support.');
-      } 
-      // Sai email / password
-      else if (msg.includes('invalid') || msg.includes('password')) {
+      } else if (
+        status === 401 ||
+        msg.includes('invalid') ||
+        msg.includes('credentials') ||
+        msg.includes('password')
+      ) {
         showError('Invalid email or password');
-      } 
-      // Các lỗi khác
-      else {
-        showError(error.response?.data?.message || 'Login failed. Please try again.');
+      } else {
+        showError(rawMessage || 'Login failed. Please try again.');
       }
     } finally {
       setLoading(false);

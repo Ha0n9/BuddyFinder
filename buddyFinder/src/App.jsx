@@ -4,6 +4,7 @@ import Navbar from './components/common/Navbar';
 import { useEffect } from 'react';
 import websocketService from './services/websocket';
 import { useNotificationStore } from './store/notificationStore';
+import { getUserProfile } from './services/api';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -18,10 +19,28 @@ import PricingPage from "./pages/PricingPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import UserProfileView from './pages/UserProfileView';
 import RefundPage from './pages/RefundPage';
+import ReportsPage from './pages/ReportsPage';
 
 function App() {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, setUser, logout } = useAuthStore();
   const { addNotification } = useNotificationStore();
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      logout();
+      return;
+    }
+
+    getUserProfile()
+      .then((response) => {
+        setUser(response.data);
+      })
+      .catch(() => {
+        localStorage.removeItem('token');
+        logout();
+      });
+  }, [logout, setUser]);
 
   useEffect(() => {
     if (isAuthenticated && user?.userId) {
@@ -107,6 +126,12 @@ function App() {
         <Route path="/refund" element={
           <ProtectedRoute>
             <RefundPage />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/reports" element={
+          <ProtectedRoute>
+            <ReportsPage />
           </ProtectedRoute>
         } />
       </Routes>

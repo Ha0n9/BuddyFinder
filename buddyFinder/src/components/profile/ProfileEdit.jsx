@@ -9,11 +9,22 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 const schema = yup.object({
-  name: yup.string().required('Name is required'),
-  age: yup.number().positive().integer().required('Age is required'),
+  name: yup
+    .string()
+    .max(35, 'Name must be less than 35 characters')
+    .required('Name is required'),
+  age: yup
+    .number()
+    .typeError('Age is required')
+    .min(18, 'Must be at least 18')
+    .max(65, 'Must be 65 or younger')
+    .required('Age is required'),
   gender: yup.string().required('Gender is required'),
   interests: yup.string().required('Interests are required'),
-  location: yup.string().required('Location is required'),
+  location: yup
+    .string()
+    .max(40, 'Location must be less than 40 characters')
+    .required('Location is required'),
   bio: yup.string().max(200, 'Bio must be less than 200 characters'),
   fitnessLevel: yup.string().required('Fitness level is required'),
 }).required();
@@ -21,7 +32,7 @@ const schema = yup.object({
 function ProfileEdit() {
   const { user, setUser } = useAuthStore();
   const navigate = useNavigate();
-  
+
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
@@ -48,118 +59,122 @@ function ProfileEdit() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-400 via-purple-500 to-orange-400 py-12 px-4">
+    <div className="min-h-screen bg-[#0B0B0B] py-12 px-4 text-white">
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-3xl p-8">
+        <div className="bg-[#111111] border border-[#2A2A2A] rounded-3xl p-8 shadow-[0_0_25px_rgba(255,95,0,0.15)] backdrop-blur-sm">
           {/* Header */}
           <div className="flex items-center mb-8">
             <button
               onClick={() => navigate('/profile')}
-              className="p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-full transition-colors"
+              className="p-2 text-gray-400 hover:text-[#FF5F00] hover:bg-[#1A1A1A] rounded-full transition-all"
             >
               <ArrowLeft className="w-6 h-6" />
             </button>
-            <h1 className="text-3xl font-bold text-white ml-4">Edit Profile</h1>
+            <h1 className="text-3xl font-bold ml-4 text-[#FF5F00]">Edit Profile</h1>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <label className="block text-white mb-2">Name</label>
+              <label className="block text-gray-400 mb-2">Name</label>
               <input
                 {...register('name')}
-                className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
+                className="w-full p-3 rounded-lg bg-[#1A1A1A] text-white border border-[#2A2A2A] focus:outline-none focus:border-[#FF5F00] focus:ring-1 focus:ring-[#FF5F00] transition-all"
                 type="text"
+                maxLength={35}
                 placeholder="John Doe"
               />
-              {errors.name && <p className="text-red-200 text-sm mt-1">{errors.name.message}</p>}
+              {errors.name && <p className="text-red-400 text-sm mt-1">{errors.name.message}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-white mb-2">Age</label>
+                <label className="block text-gray-400 mb-2">Age</label>
                 <input
                   {...register('age')}
-                  className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
+                  className="w-full p-3 rounded-lg bg-[#1A1A1A] text-white border border-[#2A2A2A] focus:outline-none focus:border-[#FF5F00] focus:ring-1 focus:ring-[#FF5F00]"
                   type="number"
+                  min={18}
+                  max={65}
                   placeholder="25"
                 />
-                {errors.age && <p className="text-red-200 text-sm mt-1">{errors.age.message}</p>}
+                {errors.age && <p className="text-red-400 text-sm mt-1">{errors.age.message}</p>}
               </div>
 
               <div>
-                <label className="block text-white mb-2">Gender</label>
+                <label className="block text-gray-400 mb-2">Gender</label>
                 <select
                   {...register('gender')}
-                  className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
+                  className="w-full p-3 rounded-lg bg-[#1A1A1A] text-white border border-[#2A2A2A] focus:outline-none focus:border-[#FF5F00] focus:ring-1 focus:ring-[#FF5F00]"
                 >
-                  <option value="" className="text-gray-800">Select gender</option>
-                  <option value="Male" className="text-gray-800">Male</option>
-                  <option value="Female" className="text-gray-800">Female</option>
-                  <option value="Other" className="text-gray-800">Other</option>
+                  <option value="">Select gender</option>
+                  <option value="Male" className="text-black">Male</option>
+                  <option value="Female" className="text-black">Female</option>
+                  <option value="Other" className="text-black">Other</option>
                 </select>
-                {errors.gender && <p className="text-red-200 text-sm mt-1">{errors.gender.message}</p>}
+                {errors.gender && <p className="text-red-400 text-sm mt-1">{errors.gender.message}</p>}
               </div>
             </div>
 
             <div>
-              <label className="block text-white mb-2">Interests</label>
+              <label className="block text-gray-400 mb-2">Interests</label>
               <input
                 {...register('interests')}
-                className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
+                className="w-full p-3 rounded-lg bg-[#1A1A1A] text-white border border-[#2A2A2A] focus:outline-none focus:border-[#FF5F00] focus:ring-1 focus:ring-[#FF5F00]"
                 type="text"
                 placeholder="Gym, Running, Yoga"
               />
-              {errors.interests && <p className="text-red-200 text-sm mt-1">{errors.interests.message}</p>}
+              {errors.interests && <p className="text-red-400 text-sm mt-1">{errors.interests.message}</p>}
             </div>
 
             <div>
-              <label className="block text-white mb-2">Location</label>
+              <label className="block text-gray-400 mb-2">Location</label>
               <input
                 {...register('location')}
-                className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
+                className="w-full p-3 rounded-lg bg-[#1A1A1A] text-white border border-[#2A2A2A] focus:outline-none focus:border-[#FF5F00] focus:ring-1 focus:ring-[#FF5F00]"
                 type="text"
+                maxLength={40}
                 placeholder="Vancouver"
               />
-              {errors.location && <p className="text-red-200 text-sm mt-1">{errors.location.message}</p>}
+              {errors.location && <p className="text-red-400 text-sm mt-1">{errors.location.message}</p>}
             </div>
 
             <div>
-              <label className="block text-white mb-2">Bio</label>
+              <label className="block text-gray-400 mb-2">Bio</label>
               <textarea
                 {...register('bio')}
-                className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white placeholder-white placeholder-opacity-70 border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
+                className="w-full p-3 rounded-lg bg-[#1A1A1A] text-white border border-[#2A2A2A] focus:outline-none focus:border-[#FF5F00] focus:ring-1 focus:ring-[#FF5F00]"
                 rows="3"
                 placeholder="Tell us about yourself..."
               />
-              {errors.bio && <p className="text-red-200 text-sm mt-1">{errors.bio.message}</p>}
+              {errors.bio && <p className="text-red-400 text-sm mt-1">{errors.bio.message}</p>}
             </div>
 
             <div>
-              <label className="block text-white mb-2">Fitness Level</label>
+              <label className="block text-gray-400 mb-2">Fitness Level</label>
               <select
                 {...register('fitnessLevel')}
-                className="w-full p-3 rounded-lg bg-white bg-opacity-20 text-white border border-white border-opacity-30 focus:outline-none focus:ring-2 focus:ring-white"
+                className="w-full p-3 rounded-lg bg-[#1A1A1A] text-white border border-[#2A2A2A] focus:outline-none focus:border-[#FF5F00] focus:ring-1 focus:ring-[#FF5F00]"
               >
-                <option value="" className="text-gray-800">Select level</option>
-                <option value="Beginner" className="text-gray-800">Beginner</option>
-                <option value="Intermediate" className="text-gray-800">Intermediate</option>
-                <option value="Advanced" className="text-gray-800">Advanced</option>
+                <option value="">Select level</option>
+                <option value="Beginner" className="text-black">Beginner</option>
+                <option value="Intermediate" className="text-black">Intermediate</option>
+                <option value="Advanced" className="text-black">Advanced</option>
               </select>
-              {errors.fitnessLevel && <p className="text-red-200 text-sm mt-1">{errors.fitnessLevel.message}</p>}
+              {errors.fitnessLevel && <p className="text-red-400 text-sm mt-1">{errors.fitnessLevel.message}</p>}
             </div>
 
             <div className="flex gap-4 mt-6">
-              <Button 
+              <Button
                 type="button"
                 onClick={() => navigate('/profile')}
-                className="flex-1 bg-white bg-opacity-20 text-white font-bold py-3 rounded-lg border-2 border-white border-opacity-30 hover:bg-opacity-30 transition-all"
+                className="flex-1 bg-[#1A1A1A] border border-[#2A2A2A] text-gray-300 font-bold py-3 rounded-lg hover:border-[#FF5F00] hover:text-[#FF5F00] transition-all"
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 type="submit"
-                className="flex-1 bg-white text-pink-500 font-bold py-3 rounded-lg hover:bg-opacity-90 transition-all"
+                className="flex-1 bg-[#FF5F00] text-white font-bold py-3 rounded-lg hover:bg-[#ff7533] transition-all"
               >
                 Save Changes
               </Button>

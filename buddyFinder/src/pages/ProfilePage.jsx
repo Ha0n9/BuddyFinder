@@ -6,10 +6,12 @@ import PhotoUpload from '../components/profile/PhotoUpload';
 import VerificationModal from '../components/profile/VerificationModal';
 import InviteFriendModal from '../components/profile/InviteFriendModal';
 import DeleteAccountModal from '../components/profile/DeleteAccountModal';
-import { DollarSign, Shield, CheckCircle, Users, Trash2 } from 'lucide-react';
+import ProfilePictureUpload from '../components/profile/ProfilePictureUpload';
+import { DollarSign, Shield, CheckCircle, Users, Trash2, Download } from 'lucide-react';
 // import { Users } from 'lucide-react';
 import { getProfile } from '../services/api';
 import { useAuthStore } from '../store/authStore';
+import { showError, showSuccess } from '../utils/toast';
 
 function ProfilePage() {
   const { user } = useAuthStore();
@@ -44,10 +46,15 @@ function ProfilePage() {
       const response = await fetch('http://localhost:8080/api/verification/status', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (response.ok) {
-        const data = await response.json();
-        setVerificationStatus(data);
+      if (response.status === 204) {
+        setVerificationStatus(null);
+        return;
       }
+      if (!response.ok) {
+        throw new Error(`Failed with status ${response.status}`);
+      }
+      const data = await response.json();
+      setVerificationStatus(data);
     } catch (error) {
       console.error('Failed to fetch verification status:', error);
     }
@@ -66,6 +73,27 @@ function ProfilePage() {
 
   const handleVerificationSuccess = () => {
     fetchVerificationStatus();
+  };
+
+  const handleExportProfile = async () => {
+    try {
+      const response = await getProfile();
+      const blob = new Blob([JSON.stringify(response.data, null, 2)], {
+        type: 'application/json'
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `buddyfinder-profile-${response.data.userId || 'me'}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showSuccess('Profile exported successfully');
+    } catch (error) {
+      console.error('Failed to export profile:', error);
+      showError('Failed to export profile');
+    }
   };
 
   if (loading) {
@@ -87,7 +115,24 @@ function ProfilePage() {
                 
                 {/* Profile Info */}
                 <div className="bg-[#1A1A1A]/70 backdrop-blur-md border border-[#2A2A2A] rounded-3xl shadow-md p-6">
-                  <ProfileCard />
+                  <div className="flex flex-col gap-4">
+                    <div className="flex justify-end">
+                      <button
+                        onClick={handleExportProfile}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FF5F00] text-white font-semibold shadow-[0_4px_12px_rgba(255,95,0,0.4)] hover:bg-[#ff7133] transition-all"
+                      >
+                        <Download className="w-4 h-4" />
+                        Export JSON
+                      </button>
+                    </div>
+                    <ProfileCard verificationStatus={verificationStatus} />
+                  </div>
+                </div>
+
+                {/* Profile Picture */}
+                <div className="bg-[#1A1A1A]/70 backdrop-blur-md border border-[#2A2A2A] rounded-3xl shadow-md p-6">
+                  <h2 className="text-xl font-bold mb-4 text-white tracking-tight">Profile Picture</h2>
+                  <ProfilePictureUpload initialUrl={user?.profilePictureUrl} />
                 </div>
 
                 {/* Photo Upload */}
@@ -204,6 +249,22 @@ function ProfilePage() {
                     </div>
                   </div>
                 )}
+
+                <div className="bg-[#1A1A1A]/70 backdrop-blur-md border border-[#2A2A2A] rounded-3xl shadow-md p-6">
+                  <h2 className="text-xl font-bold mb-4 text-white tracking-tight flex items-center gap-2">
+                    🛡️ Safety & Reports
+                  </h2>
+                  <p className="text-sm text-gray-400 mb-4">
+                    Review reports you filed, respond to disputes, or provide more evidence.
+                  </p>
+                  <button
+                    onClick={() => navigate('/reports')}
+                    className="w-full flex items-center justify-center gap-2 bg-[#FF5F00] hover:bg-[#ff7133] text-white px-6 py-3 rounded-xl font-bold shadow-[0_4px_12px_rgba(255,95,0,0.4)] transition-all"
+                  >
+                    <Shield className="w-5 h-5" />
+                    Open Safety Center
+                  </button>
+                </div>
 
                 {/* Delete Account Section - GDPR Compliance */}
                 <div className="bg-[#1A1A1A]/70 backdrop-blur-md border border-red-500/30 rounded-3xl shadow-md p-6">

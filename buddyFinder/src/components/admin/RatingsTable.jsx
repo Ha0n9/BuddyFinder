@@ -7,7 +7,6 @@ export default function RatingsTable({ ratings, refresh }) {
   const handleDelete = async (id) => {
     if (!window.confirm("Remove this rating?")) return;
     await deleteRating(id);
-    showSuccess("Rating removed");
     refresh && refresh();
   };
 
