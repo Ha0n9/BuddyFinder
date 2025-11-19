@@ -20,6 +20,7 @@ import CheckoutPage from "./pages/CheckoutPage";
 import UserProfileView from './pages/UserProfileView';
 import RefundPage from './pages/RefundPage';
 import ReportsPage from './pages/ReportsPage';
+import ContactSupportPage from './pages/ContactSupportPage';
 
 function App() {
   const { isAuthenticated, user, setUser, logout } = useAuthStore();
@@ -82,6 +83,7 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/search" />} />
+        <Route path="/contact-support" element={<ContactSupportPage />} />
         <Route path="/register" element={!isAuthenticated ? <RegisterPage /> : <Navigate to="/search" />} />
         
         <Route path="/profile/*" element={

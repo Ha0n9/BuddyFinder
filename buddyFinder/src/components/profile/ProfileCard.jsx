@@ -1,7 +1,7 @@
 // src/components/profile/ProfileCard.jsx
 import { useAuthStore } from '../../store/authStore';
 import { Link } from 'react-router-dom';
-import { Edit, MapPin, Heart, Calendar } from 'lucide-react';
+import { Edit, MapPin, Heart, Calendar, Clock8, Sparkles, Star } from 'lucide-react';
 
 function ProfileCard({ verificationStatus }) {
   const { user } = useAuthStore();
@@ -77,6 +77,16 @@ function ProfileCard({ verificationStatus }) {
           </div>
         </div>
 
+        {user.availability && (
+          <div className="flex items-start">
+            <Clock8 className="w-5 h-5 text-white mr-3 mt-1" />
+            <div>
+              <p className="text-white opacity-70 text-sm">Availability</p>
+              <p className="text-white font-medium">{user.availability}</p>
+            </div>
+          </div>
+        )}
+
         {user.bio && (
           <div className="flex items-start">
             <Calendar className="w-5 h-5 text-white mr-3 mt-1" />
@@ -87,6 +97,29 @@ function ProfileCard({ verificationStatus }) {
           </div>
         )}
       </div>
+
+      {(user.zodiacSign || user.mbtiType) && (
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {user.zodiacSign && (
+            <div className="bg-white bg-opacity-10 rounded-xl p-4 flex items-center gap-3">
+              <Star className="w-6 h-6 text-[#FF5F00]" />
+              <div>
+                <p className="text-white opacity-70 text-sm">Zodiac Sign</p>
+                <p className="text-white font-semibold text-lg">{user.zodiacSign}</p>
+              </div>
+            </div>
+          )}
+          {user.mbtiType && (
+            <div className="bg-white bg-opacity-10 rounded-xl p-4 flex items-center gap-3">
+              <Sparkles className="w-6 h-6 text-[#FF5F00]" />
+              <div>
+                <p className="text-white opacity-70 text-sm">MBTI</p>
+                <p className="text-white font-semibold text-lg">{user.mbtiType}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Verification Badge */}
       {isVerified && (

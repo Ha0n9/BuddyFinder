@@ -107,6 +107,7 @@ function ActivityChatWindow({ roomId, roomName, onLeave }) {
   };
 
   const openReportModal = (member) => {
+    console.log("📣 Member to report:", member);
     if (!member || member.userId === user?.userId) return;
     setReportTarget(member);
     setReportModalOpen(true);

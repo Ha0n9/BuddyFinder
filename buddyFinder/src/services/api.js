@@ -10,7 +10,19 @@ const api = axios.create({
 });
 
 // ========== REQUEST INTERCEPTOR ==========
+const AUTH_WHITELIST = ['/auth/login', '/auth/register'];
+
 api.interceptors.request.use((config) => {
+  const skipAuthHeader = AUTH_WHITELIST.some((path) => {
+    const url = config.url || '';
+    return url.startsWith(path) || url.includes(`/api${path}`);
+  });
+
+  if (skipAuthHeader) {
+    delete config.headers.Authorization;
+    return config;
+  }
+
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -98,6 +110,7 @@ export const getMatches = () => api.get('/matches');
 export const postActivity = (data) => api.post('/activities/create', data);
 export const getActivities = () => api.get('/activities');
 export const joinActivity = (activityId) => api.post(`/activities/${activityId}/join`);
+export const leaveActivity = (activityId) => api.post(`/activities/${activityId}/leave`);
 export const deleteActivity = (activityId) => api.delete(`/activities/${activityId}`);
 
 // ================== CHAT (1-1) ==================
@@ -118,6 +131,10 @@ export const leaveGroupChat = (roomId) =>
   api.post(`/group-chat/rooms/${roomId}/leave`);
 
 export const getMyGroupChats = () => api.get('/group-chat/rooms/me');
+
+// ================== SUBSCRIPTIONS ==================
+export const upgradeSubscription = (plan) =>
+  api.post('/subscriptions/upgrade', { plan });
 
 // ================== REPORTS ==================
 export const submitReport = (payload) => api.post('/reports', payload);
@@ -161,5 +178,8 @@ export const uploadProfilePicture = (file) => {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 };
+
+// ================== SUPPORT ==================
+export const submitSupportRequest = (payload) => api.post('/support/contact', payload);
 
 export default api;

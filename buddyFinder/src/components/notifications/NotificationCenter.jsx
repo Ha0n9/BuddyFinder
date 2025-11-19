@@ -14,6 +14,8 @@ import { showError } from '../../utils/toast';
 function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 16 });
   
   const { 
     notifications, 
@@ -85,11 +87,26 @@ function NotificationCenter() {
     return icons[type] || '🔔';
   };
 
+  const toggleDropdown = () => {
+    setIsOpen((prev) => {
+      const next = !prev;
+      if (!prev && buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        setDropdownPos({
+          top: rect.bottom + 12,
+          right: Math.max(window.innerWidth - rect.right, 16),
+        });
+      }
+      return next;
+    });
+  };
+
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative z-[1200]" ref={dropdownRef}>
       {/* Bell Button */}
       <button 
-        onClick={() => setIsOpen(!isOpen)}
+        ref={buttonRef}
+        onClick={toggleDropdown}
         className="relative p-2 text-gray-300 hover:text-[#FF5F00] hover:bg-[#1A1A1A] rounded-full transition-all"
       >
         <Bell className="w-6 h-6" />
@@ -103,7 +120,9 @@ function NotificationCenter() {
       {/* Dropdown */}
       {isOpen && (
         <div
-    className="absolute mt-2 w-80 md:w-96 bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.5)] z-50 max-h-[600px] flex flex-col translate-x-20" style={{ right: '-0.5rem' }}>
+          className="fixed w-80 md:w-96 bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.5)] z-[2000] max-h-[600px] flex flex-col"
+          style={{ top: dropdownPos.top, right: dropdownPos.right }}
+        >
           {/* Header */}
           <div className="p-4 border-b border-[#2A2A2A] flex items-center justify-between">
             <h3 className="font-bold text-white text-lg">Notifications</h3>

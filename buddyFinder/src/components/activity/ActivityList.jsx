@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getActivities, joinActivity, deleteActivity, getActivityChatRoom } from '../../services/api';
+import { getActivities, joinActivity, deleteActivity, getActivityChatRoom, leaveActivity } from '../../services/api';
 import Button from '../common/Button';
-import { MapPin, Clock, Users, Trash2 } from 'lucide-react';
+import { MapPin, Clock, Users, Trash2, LogOut } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { showError, showSuccess } from '../../utils/toast';
 
@@ -13,6 +13,7 @@ function ActivityList({ refresh }) {
   const [loading, setLoading] = useState(true);
   const [joiningId, setJoiningId] = useState(null);
   const [openingChatId, setOpeningChatId] = useState(null);
+  const [leavingId, setLeavingId] = useState(null);
   const [conflictInfo, setConflictInfo] = useState(null);
   const [pendingJoinActivity, setPendingJoinActivity] = useState(null);
   const { user } = useAuthStore();
@@ -51,7 +52,7 @@ function ActivityList({ refresh }) {
         return;
       }
 
-      if (normalized.includes('full')) {
+      if (normalized.includes('is full')) {
         showError(rawMessage || 'Activity is full');
         fetchActivities();
         return;
@@ -74,6 +75,25 @@ function ActivityList({ refresh }) {
       showError(error.response?.data?.message || 'Failed to join activity');
     } finally {
       setJoiningId(null);
+    }
+  };
+
+  const handleLeave = async (activityId) => {
+    if (!window.confirm('Leave this activity?')) return;
+    setLeavingId(activityId);
+    try {
+      const response = await leaveActivity(activityId);
+      const message =
+        typeof response.data === 'string'
+          ? response.data
+          : response.data?.message;
+      showSuccess(message || 'You have left the activity.');
+      fetchActivities();
+    } catch (error) {
+      console.error('Failed to leave activity:', error);
+      showError(error.response?.data?.message || 'Failed to leave activity');
+    } finally {
+      setLeavingId(null);
     }
   };
 
@@ -255,13 +275,30 @@ function ActivityList({ refresh }) {
       </div>
 
       {isCreator || isParticipant ? (
-        <Button
-          onClick={() => handleOpenChat(activity.activityId)}
-          disabled={openingChatId === activity.activityId}
-          className="w-full bg-white text-pink-500 font-bold py-2 rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {openingChatId === activity.activityId ? 'Opening chat...' : 'Open Group Chat'}
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button
+            onClick={() => handleOpenChat(activity.activityId)}
+            disabled={openingChatId === activity.activityId}
+            className="flex-1 bg-white text-pink-500 font-bold py-2 rounded-lg hover:bg-opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {openingChatId === activity.activityId ? 'Opening chat...' : 'Open Group Chat'}
+          </Button>
+          {!isCreator && (
+            <Button
+              onClick={() => handleLeave(activity.activityId)}
+              disabled={leavingId === activity.activityId}
+              variant="secondary"
+              className="flex-1 py-2"
+            >
+              {leavingId === activity.activityId ? 'Leaving...' : (
+                <span className="flex items-center justify-center gap-2">
+                  <LogOut className="w-4 h-4" />
+                  Leave
+                </span>
+              )}
+            </Button>
+          )}
+        </div>
       ) : (
         <Button 
           onClick={() => requestJoin(activity)}
@@ -282,34 +319,42 @@ function ActivityList({ refresh }) {
     );
   }
 
-  if (activities.length === 0) {
-    return (
-      <div className="text-center text-white py-8">
-        <p className="text-lg">No activities available yet.</p>
-        <p className="text-sm opacity-70">Be the first to create one!</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-8">
-      {categorizedActivities.joinedActivities.length > 0 && (
-        <section className="space-y-4">
+    <div className="flex flex-col gap-6 flex-1">
+      <section className="border border-[#2A2A2A] rounded-2xl p-5 bg-white/5 backdrop-blur-sm flex flex-col">
+        <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-bold text-white">Joined Activities</h3>
-          {categorizedActivities.joinedActivities.map(renderActivityCard)}
-        </section>
-      )}
+          <span className="text-sm text-gray-400">
+            {categorizedActivities.joinedActivities.length}
+          </span>
+        </div>
+        <div className="space-y-4 overflow-y-auto pr-2 max-h-[360px]">
+          {categorizedActivities.joinedActivities.length === 0 ? (
+            <div className="text-center text-gray-400 py-4">
+              You haven't joined any activities yet.
+            </div>
+          ) : (
+            categorizedActivities.joinedActivities.map(renderActivityCard)
+          )}
+        </div>
+      </section>
 
-      <section className="space-y-4">
-        <h3 className="text-xl font-bold text-white">Available Activities</h3>
-        {categorizedActivities.availableActivities.length === 0 ? (
-          <div className="text-center text-white bg-white/10 rounded-2xl py-6">
-            <p className="text-base">All available activities have been joined.</p>
-            <p className="text-sm opacity-70">Check back later for new ones!</p>
-          </div>
-        ) : (
-          categorizedActivities.availableActivities.map(renderActivityCard)
-        )}
+      <section className="border border-[#2A2A2A] rounded-2xl p-5 bg-white/5 backdrop-blur-sm flex flex-col">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-bold text-white">Available Activities</h3>
+          <span className="text-sm text-gray-400">
+            {categorizedActivities.availableActivities.length}
+          </span>
+        </div>
+        <div className="space-y-4 overflow-y-auto pr-2 max-h-[360px]">
+          {categorizedActivities.availableActivities.length === 0 ? (
+            <div className="text-center text-gray-400 py-4">
+              All activities are already joined. Check back later!
+            </div>
+          ) : (
+            categorizedActivities.availableActivities.map(renderActivityCard)
+          )}
+        </div>
       </section>
 
       {conflictInfo && (

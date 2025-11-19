@@ -7,6 +7,20 @@ import { updateProfile } from '../../services/api';
 import Button from '../common/Button';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { showError, showSuccess } from '../../utils/toast';
+
+const MBTI_TYPES = [
+  'INTJ', 'INTP', 'ENTJ', 'ENTP',
+  'INFJ', 'INFP', 'ENFJ', 'ENFP',
+  'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
+  'ISTP', 'ISFP', 'ESTP', 'ESFP',
+];
+
+const ZODIAC_SIGNS = [
+  'Aries', 'Taurus', 'Gemini', 'Cancer',
+  'Leo', 'Virgo', 'Libra', 'Scorpio',
+  'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces',
+];
 
 const schema = yup.object({
   name: yup
@@ -27,11 +41,18 @@ const schema = yup.object({
     .required('Location is required'),
   bio: yup.string().max(200, 'Bio must be less than 200 characters'),
   fitnessLevel: yup.string().required('Fitness level is required'),
+  availability: yup
+    .string()
+    .max(120, 'Availability must be less than 120 characters')
+    .required('Availability is required'),
+  zodiacSign: yup.string().nullable(),
+  mbtiType: yup.string().nullable(),
 }).required();
 
 function ProfileEdit() {
   const { user, setUser } = useAuthStore();
   const navigate = useNavigate();
+  const isPremiumTier = user?.tier === 'PREMIUM' || user?.tier === 'ELITE';
 
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
@@ -43,6 +64,9 @@ function ProfileEdit() {
       location: user?.location || '',
       bio: user?.bio || '',
       fitnessLevel: user?.fitnessLevel || '',
+      availability: user?.availability || '',
+      zodiacSign: user?.zodiacSign || '',
+      mbtiType: user?.mbtiType || '',
     }
   });
 
@@ -50,11 +74,12 @@ function ProfileEdit() {
     try {
       const response = await updateProfile(data);
       setUser(response.data);
-      alert('Profile updated successfully!');
+      showSuccess('Profile updated successfully!');
       navigate('/profile');
     } catch (error) {
       console.error('Profile update failed:', error);
-      alert('Failed to update profile');
+      const message = error.response?.data?.message || 'Failed to update profile';
+      showError(message);
     }
   };
 
@@ -140,6 +165,20 @@ function ProfileEdit() {
             </div>
 
             <div>
+              <label className="block text-gray-400 mb-2">Availability</label>
+              <input
+                {...register('availability')}
+                className="w-full p-3 rounded-lg bg-[#1A1A1A] text-white border border-[#2A2A2A] focus:outline-none focus:border-[#FF5F00] focus:ring-1 focus:ring-[#FF5F00]"
+                type="text"
+                maxLength={120}
+                placeholder="Weekends, Evenings"
+              />
+              {errors.availability && (
+                <p className="text-red-400 text-sm mt-1">{errors.availability.message}</p>
+              )}
+            </div>
+
+            <div>
               <label className="block text-gray-400 mb-2">Bio</label>
               <textarea
                 {...register('bio')}
@@ -162,6 +201,54 @@ function ProfileEdit() {
                 <option value="Advanced" className="text-black">Advanced</option>
               </select>
               {errors.fitnessLevel && <p className="text-red-400 text-sm mt-1">{errors.fitnessLevel.message}</p>}
+            </div>
+
+            <div className="bg-[#0F0F0F] border border-[#2A2A2A] rounded-2xl p-5 mt-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                  <p className="text-gray-300 font-semibold">MBTI & Zodiac</p>
+                  <p className="text-sm text-gray-500">Unlock better matches with advanced filters.</p>
+                </div>
+                {!isPremiumTier && (
+                  <span className="text-xs uppercase tracking-wide text-[#FF5F00] font-semibold bg-[#FF5F00]/10 px-3 py-1 rounded-full">
+                    Premium feature
+                  </span>
+                )}
+              </div>
+              <div className="grid md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <label className="block text-gray-400 mb-2">MBTI Type</label>
+                  <select
+                    {...register('mbtiType')}
+                    disabled={!isPremiumTier}
+                    className="w-full p-3 rounded-lg bg-[#1A1A1A] text-white border border-[#2A2A2A] focus:outline-none focus:border-[#FF5F00] focus:ring-1 focus:ring-[#FF5F00] disabled:opacity-40"
+                  >
+                    <option value="">Select MBTI</option>
+                    {MBTI_TYPES.map((type) => (
+                      <option key={type} value={type} className="text-black">
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.mbtiType && <p className="text-red-400 text-sm mt-1">{errors.mbtiType.message}</p>}
+                </div>
+                <div>
+                  <label className="block text-gray-400 mb-2">Zodiac Sign</label>
+                  <select
+                    {...register('zodiacSign')}
+                    disabled={!isPremiumTier}
+                    className="w-full p-3 rounded-lg bg-[#1A1A1A] text-white border border-[#2A2A2A] focus:outline-none focus:border-[#FF5F00] focus:ring-1 focus:ring-[#FF5F00] disabled:opacity-40"
+                  >
+                    <option value="">Select sign</option>
+                    {ZODIAC_SIGNS.map((sign) => (
+                      <option key={sign} value={sign} className="text-black">
+                        {sign}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.zodiacSign && <p className="text-red-400 text-sm mt-1">{errors.zodiacSign.message}</p>}
+                </div>
+              </div>
             </div>
 
             <div className="flex gap-4 mt-6">

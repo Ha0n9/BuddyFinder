@@ -204,10 +204,14 @@ export const getAllUsers = async () => {
   }
 };
 
-export const banUser = async (userId) => {
+export const banUser = async (userId, days = 0, reason = '') => {
   try {
-    const res = await api.post(`/admin/users/${userId}/ban`);
-    showSuccess("User has been banned successfully.");
+    const res = await api.post(`/admin/users/${userId}/ban`, { days, reason });
+    showSuccess(
+      days > 0
+        ? `User has been banned for ${days} day${days > 1 ? "s" : ""}.`
+        : "User has been banned."
+    );
     return res.data;
   } catch (error) {
     handleAdminError(error, "banning user");
@@ -379,6 +383,26 @@ export const rejectVerification = async (verificationId, adminNotes) => {
     return res.data;
   } catch (error) {
     handleAdminError(error, "rejecting verification");
+  }
+};
+
+// ============ SUPPORT REQUESTS ============
+export const getSupportRequests = async () => {
+  try {
+    const res = await api.get("/support");
+    return res.data;
+  } catch (error) {
+    handleAdminError(error, "fetching support requests");
+  }
+};
+
+export const updateSupportRequestStatus = async (requestId, payload) => {
+  try {
+    const res = await api.patch(`/support/${requestId}/status`, payload);
+    showSuccess("Support request updated");
+    return res.data;
+  } catch (error) {
+    handleAdminError(error, "updating support request");
   }
 };
 

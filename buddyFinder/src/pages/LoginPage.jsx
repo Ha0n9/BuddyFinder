@@ -75,11 +75,12 @@
 // export default LoginPage;
 
 import LoginForm from "../components/auth/LoginForm";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Dumbbell, ArrowLeft } from "lucide-react";
 import { showError } from "../utils/toast";
 
 function LoginPage() {
+  const navigate = useNavigate();
   // Monkey patch toast lỗi khi đăng nhập bị ban
   // (chỉ chạy 1 lần để override showError behavior cho login)
   const originalShowError = showError;
@@ -159,8 +160,8 @@ function LoginPage() {
               {/* Login form */}
               <LoginForm />
 
-              {/* Sign up link */}
-              <div className="mt-6 text-center">
+            {/* Sign up & support links */}
+            <div className="mt-6 text-center space-y-2">
                 <p className="text-gray-400 text-sm">
                   Don’t have an account?{" "}
                   <Link
@@ -170,6 +171,13 @@ function LoginPage() {
                     Sign Up
                   </Link>
                 </p>
+                <button
+                  type="button"
+                  onClick={() => navigate('/contact-support')}
+                  className="text-sm text-gray-400 hover:text-[#FF5F00] underline"
+                >
+                  Need help? Contact support
+                </button>
               </div>
             </div>
 
@@ -177,6 +185,7 @@ function LoginPage() {
             <div className="flex items-center justify-center mt-8">
               <div className="h-[2px] w-16 bg-[#FF5F00] rounded-full animate-pulse" />
             </div>
+
           </div>
         </div>
       </div>

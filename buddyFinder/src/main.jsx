@@ -19,16 +19,18 @@ createRoot(document.getElementById('root')).render(
             padding: '16px',
           },
           success: {
+            icon: '✓',
             iconTheme: {
-              primary: '#4ade80',
-              secondary: '#fff',
-            },
+              primary: '#22c55e',
+              secondary: '#1a1a1a',
+            }
           },
           error: {
             duration: 4000,
+            icon: '❌',
             iconTheme: {
               primary: '#ef4444',
-              secondary: '#fff',
+              secondary: '#1a1a1a',
             },
           },
         }}

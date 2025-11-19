@@ -4,6 +4,7 @@ import { processMockPayment, upgradeMockSubscription } from "../services/mockPay
 import { useAuthStore } from "../store/authStore";
 import { showSuccess, showError } from "../utils/toast";
 import { CreditCard, Lock, ArrowLeft } from "lucide-react";
+import { upgradeSubscription } from "../services/api";
 
 export default function CheckoutPage() {
   const [params] = useSearchParams();
@@ -50,10 +51,18 @@ export default function CheckoutPage() {
       const subscriptionResult = await upgradeMockSubscription(user.userId, plan);
       console.log("Subscription Result:", subscriptionResult);
 
-      setUser({ ...user, tier: plan });
+      const backendResponse = await upgradeSubscription(plan);
+      setUser(backendResponse.data);
       showSuccess(`🎉 Payment successful! Welcome to ${plan} tier!`);
 
-      setTimeout(() => navigate("/profile"), 2000);
+      if (plan === 'PREMIUM' || plan === 'ELITE') {
+        sessionStorage.setItem('buddyfinder:new-tier', plan);
+      } else {
+        sessionStorage.removeItem('buddyfinder:new-tier');
+      }
+      setTimeout(() => {
+        navigate('/profile', { state: { subscriptionPlan: plan } });
+      }, 1500);
     } catch (error) {
       console.error("Payment error:", error);
       showError(error.message || "Payment failed. Please try again.");

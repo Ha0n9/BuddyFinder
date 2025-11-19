@@ -27,9 +27,9 @@ function ActivityPage() {
         </div>
 
         {/* Content Grid */}
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-2 gap-8 items-stretch">
           {/* Left - Post Activity */}
-          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-md p-6">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-md p-6 h-full flex flex-col">
             <h2 className="text-xl font-semibold mb-4 text-[var(--color-text-primary)]">
               Post a New Activity
             </h2>
@@ -37,7 +37,7 @@ function ActivityPage() {
           </div>
 
           {/* Right - Activity Feed */}
-          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-md p-6">
+          <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-md p-6 h-full flex flex-col">
             <h2 className="text-xl font-semibold mb-4 text-[var(--color-text-primary)]">
               Recent Activities
             </h2>

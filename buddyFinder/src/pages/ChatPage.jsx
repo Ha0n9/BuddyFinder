@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getMatches, getMyGroupChats } from '../services/api';
+import { getMatches, getMyGroupChats, markNotificationAsRead as markNotificationApi } from '../services/api';
 import ChatWindow from '../components/chat/ChatWindow';
 import ActivityChatWindow from '../components/chat/ActivityChatWindow';
 import { MessageCircle, User, Users, MoreHorizontal } from 'lucide-react';
 import ReportModal from '../components/chat/ReportModal';
+import { useNotificationStore } from '../store/notificationStore';
 
 function ChatPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -14,6 +15,22 @@ function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [menuConversationId, setMenuConversationId] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
+  const notifications = useNotificationStore((state) => state.notifications);
+  const markNotificationInStore = useNotificationStore((state) => state.markAsRead);
+  const unreadByConversation = useMemo(() => {
+    const map = {};
+    notifications.forEach((notification) => {
+      if (notification.isRead) return;
+      if (notification.relatedType === 'MATCH') {
+        const key = `match-${notification.relatedId}`;
+        map[key] = (map[key] || 0) + 1;
+      } else if (notification.relatedType === 'GROUP') {
+        const key = `group-${notification.relatedId}`;
+        map[key] = (map[key] || 0) + 1;
+      }
+    });
+    return map;
+  }, [notifications]);
 
   const fetchConversations = useCallback(async () => {
     setLoading(true);
@@ -102,6 +119,41 @@ function ChatPage() {
     }
   }, [loading, conversations, searchParams, selectedConversation]);
 
+  const markConversationNotificationsAsRead = useCallback(async (conversation) => {
+    if (!conversation) return;
+    const relatedType = conversation.type === 'group' ? 'GROUP' : 'MATCH';
+    const relatedId =
+      conversation.type === 'group'
+        ? conversation.roomId
+        : conversation.matchData?.matchId;
+    if (!relatedId) return;
+
+    const relevant = notifications.filter(
+      (notification) =>
+        !notification.isRead &&
+        notification.relatedType === relatedType &&
+        String(notification.relatedId) === String(relatedId)
+    );
+
+    if (!relevant.length) return;
+
+    await Promise.all(
+      relevant.map(async (notification) => {
+        try {
+          await markNotificationApi(notification.notiId);
+        } catch (error) {
+          console.error('Failed to mark notification as read', error);
+        } finally {
+          markNotificationInStore(notification.notiId);
+        }
+      })
+    );
+  }, [notifications, markNotificationInStore]);
+
+  useEffect(() => {
+    markConversationNotificationsAsRead(selectedConversation);
+  }, [selectedConversation, markConversationNotificationsAsRead]);
+
   const updateSearchParams = (conversation) => {
     const params = new URLSearchParams();
     if (conversation.type === 'group') {
@@ -116,6 +168,7 @@ function ChatPage() {
 
   const handleSelectConversation = (conversation) => {
     setMenuConversationId(null);
+    markConversationNotificationsAsRead(conversation);
     setSelectedConversation(conversation);
     updateSearchParams(conversation);
   };
@@ -171,6 +224,7 @@ function ChatPage() {
               {conversations.map((conversation) => {
                 const isActive = selectedConversation?.id === conversation.id;
                 const isGroup = conversation.type === 'group';
+                const unread = unreadByConversation[conversation.id] || 0;
                 return (
                   <div key={conversation.id} className="relative">
                     <div
@@ -245,6 +299,11 @@ function ChatPage() {
                           Report User
                         </button>
                       </div>
+                    )}
+                    {unread > 0 && (
+                      <span className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        {unread > 9 ? '9+' : unread}
+                      </span>
                     )}
                   </div>
                 );

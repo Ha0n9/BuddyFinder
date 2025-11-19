@@ -1,15 +1,27 @@
 // src/components/admin/UsersTable.jsx
-import React from "react";
+import React, { useState } from "react";
 import {
   banUser,
   unbanUser,
   deleteUser,
 } from "../../services/adminApi";
+import BanUserModal from "./BanUserModal";
 
 const UsersTable = ({ users, refresh }) => {
+  const [banDays, setBanDays] = useState({});
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [banReason, setBanReason] = useState({});
+
   const handleBan = async (id) => {
-    if (!window.confirm("Are you sure you want to ban this user?")) return;
-    await banUser(id);
+    setSelectedUser(users.find((u) => u.userId === id));
+    setModalOpen(true);
+  };
+
+  const confirmBan = async ({ days, reason }) => {
+    if (!selectedUser) return;
+    await banUser(selectedUser.userId, days, reason);
+    setModalOpen(false);
     refresh();
   };
 
@@ -50,14 +62,16 @@ const UsersTable = ({ users, refresh }) => {
                 <td>{u.email}</td>
                 <td>{u.isActive ? "Active" : "Banned"}</td>
                 <td>{u.isAdmin ? "Admin" : "User"}</td>
-                <td className="flex justify-center gap-2 py-2">
+                <td className="flex flex-col items-center gap-2 py-2 sm:flex-row sm:justify-center">
                   {u.isActive ? (
-                    <button
-                      onClick={() => handleBan(u.userId)}
-                      className="px-3 py-1 bg-red-500 text-white rounded"
-                    >
-                      Ban
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleBan(u.userId)}
+                        className="px-3 py-1 bg-red-500 text-white rounded"
+                      >
+                        Ban
+                      </button>
+                    </>
                   ) : (
                     <button
                       onClick={() => handleUnban(u.userId)}
@@ -78,6 +92,12 @@ const UsersTable = ({ users, refresh }) => {
           })}
         </tbody>
       </table>
+      <BanUserModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        user={selectedUser}
+        onConfirm={confirmBan}
+      />
     </div>
   );
 };
