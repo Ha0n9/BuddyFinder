@@ -7,6 +7,7 @@ import { MessageCircle, User, Users, MoreHorizontal } from 'lucide-react';
 import ReportModal from '../components/chat/ReportModal';
 import { useNotificationStore } from '../store/notificationStore';
 import { getPrimaryPhoto } from '../utils/photoUtils';
+import { useAuthStore } from '../store/authStore';
 
 function ChatPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -16,6 +17,7 @@ function ChatPage() {
   const [loading, setLoading] = useState(true);
   const [menuConversationId, setMenuConversationId] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
+  const { user } = useAuthStore();
   const notifications = useNotificationStore((state) => state.notifications);
   const markNotificationInStore = useNotificationStore((state) => state.markAsRead);
   const unreadByConversation = useMemo(() => {
@@ -121,7 +123,7 @@ function ChatPage() {
   }, [loading, conversations, searchParams, selectedConversation]);
 
   const markConversationNotificationsAsRead = useCallback(async (conversation) => {
-    if (!conversation) return;
+    if (!conversation || !user?.userId) return;
     const relatedType = conversation.type === 'group' ? 'GROUP' : 'MATCH';
     const relatedId =
       conversation.type === 'group'
@@ -132,6 +134,7 @@ function ChatPage() {
     const relevant = notifications.filter(
       (notification) =>
         !notification.isRead &&
+        notification.userId === user.userId &&
         notification.relatedType === relatedType &&
         String(notification.relatedId) === String(relatedId)
     );
@@ -141,7 +144,9 @@ function ChatPage() {
     await Promise.all(
       relevant.map(async (notification) => {
         try {
-          await markNotificationApi(notification.notiId);
+          await markNotificationApi(notification.notiId, {
+            headers: { 'X-Skip-Error-Toast': 'true' },
+          });
         } catch (error) {
           console.error('Failed to mark notification as read', error);
         } finally {
@@ -149,7 +154,7 @@ function ChatPage() {
         }
       })
     );
-  }, [notifications, markNotificationInStore]);
+  }, [notifications, markNotificationInStore, user?.userId]);
 
   useEffect(() => {
     markConversationNotificationsAsRead(selectedConversation);

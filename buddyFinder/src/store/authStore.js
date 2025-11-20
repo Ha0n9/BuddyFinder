@@ -1,6 +1,7 @@
 // src/store/authStore.js
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useNotificationStore } from './notificationStore';
 
 export const useAuthStore = create(
   persist(
@@ -10,6 +11,11 @@ export const useAuthStore = create(
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       logout: () => {
         localStorage.removeItem('token');
+        try {
+          useNotificationStore.getState().resetNotifications?.();
+        } catch (error) {
+          console.warn('Failed to reset notifications on logout', error);
+        }
         set({ user: null, isAuthenticated: false });
       },
     }),

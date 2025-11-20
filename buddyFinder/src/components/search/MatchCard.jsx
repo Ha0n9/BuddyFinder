@@ -1,4 +1,4 @@
-import { MapPin, Clock, Dumbbell, User } from 'lucide-react';
+import { MapPin, Clock, Dumbbell, User, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Button from '../common/Button';
 import { getPrimaryPhoto } from '../../utils/photoUtils';
@@ -30,22 +30,20 @@ function MatchCard({ match, onRequest }) {
           )}
 
           {/* Badges */}
-          <div className="absolute top-2 right-2 flex flex-col gap-1">
+          <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
             {match.isVerified && (
               <span className="bg-[#FF5F00] text-white px-2 py-1 rounded-full text-xs font-bold">
                 ✓ Verified
               </span>
             )}
-            {match.tier && match.tier !== 'FREE' && (
-              <span
-                className={`px-2 py-1 rounded-full text-xs font-bold ${
-                  match.tier === 'PREMIUM'
-                    ? 'bg-[#FF5F00]/90 text-white'
-                    : 'bg-yellow-500 text-black'
-                }`}
-              >
-                {match.tier}
-              </span>
+            {match.averageRating > 0 && (
+              <div className="flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+                <Star className="w-4 h-4 text-[#FF5F00]" />
+                <span>{match.averageRating.toFixed(1)}</span>
+                <span className="text-[10px] text-gray-300">
+                  ({match.totalRatings || 0})
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -58,6 +56,16 @@ function MatchCard({ match, onRequest }) {
               <h3 className="text-xl font-extrabold text-[#FF5F00]">
                 {match.name}, {match.age}
               </h3>
+              {match.averageRating > 0 && (
+                <div className="flex items-center gap-1 text-sm text-gray-300 mt-2">
+                  <span className="text-xs uppercase text-gray-500">Average Rating:</span>
+                  <Star className="w-4 h-4 text-[#FF5F00]" />
+                  <span className="font-semibold">{match.averageRating.toFixed(1)}</span>
+                  <span className="text-xs text-gray-500">
+                    ({match.totalRatings || 0})
+                  </span>
+                </div>
+              )}
               {match.fitnessLevel && (
                 <span className="inline-block px-2 py-1 bg-[#FF5F00]/20 text-[#FF5F00] text-xs font-semibold rounded-full mt-1">
                   {match.fitnessLevel}

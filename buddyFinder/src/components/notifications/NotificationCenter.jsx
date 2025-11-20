@@ -1,5 +1,6 @@
 // src/components/notifications/NotificationCenter.jsx
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Bell, X, Check, CheckCheck, Trash2 } from 'lucide-react';
 import { useNotificationStore } from '../../store/notificationStore';
 import { 
@@ -14,6 +15,7 @@ import { showError } from '../../utils/toast';
 function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const panelRef = useRef(null);
   const buttonRef = useRef(null);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 16 });
   
@@ -32,9 +34,13 @@ function NotificationCenter() {
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setIsOpen(false);
+      const withinButton = buttonRef.current?.contains(e.target);
+      const withinWrapper = dropdownRef.current?.contains(e.target);
+      const withinPanel = panelRef.current?.contains(e.target);
+      if (withinButton || withinWrapper || withinPanel) {
+        return;
       }
+      setIsOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -102,7 +108,7 @@ function NotificationCenter() {
   };
 
   return (
-    <div className="relative z-[1200]" ref={dropdownRef}>
+    <div className="relative z-[9999]" ref={dropdownRef}>
       {/* Bell Button */}
       <button 
         ref={buttonRef}
@@ -118,87 +124,90 @@ function NotificationCenter() {
       </button>
 
       {/* Dropdown */}
-      {isOpen && (
-        <div
-          className="fixed w-80 md:w-96 bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.5)] z-[2000] max-h-[600px] flex flex-col"
-          style={{ top: dropdownPos.top, right: dropdownPos.right }}
-        >
-          {/* Header */}
-          <div className="p-4 border-b border-[#2A2A2A] flex items-center justify-between">
-            <h3 className="font-bold text-white text-lg">Notifications</h3>
-            {unreadCount > 0 && (
-              <button
-                onClick={handleMarkAllAsRead}
-                className="text-[#FF5F00] text-sm font-semibold hover:underline flex items-center gap-1"
-              >
-                <CheckCheck className="w-4 h-4" />
-                Mark all read
-              </button>
-            )}
-          </div>
+      {isOpen &&
+        createPortal(
+          <div
+            className="fixed w-80 md:w-96 bg-[#1A1A1A] border border-[#2A2A2A] rounded-2xl shadow-[0_0_25px_rgba(0,0,0,0.5)] z-[5000] max-h-[600px] flex flex-col"
+            style={{ top: dropdownPos.top, right: dropdownPos.right }}
+            ref={panelRef}
+          >
+            {/* Header */}
+            <div className="p-4 border-b border-[#2A2A2A] flex items-center justify-between">
+              <h3 className="font-bold text-white text-lg">Notifications</h3>
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllAsRead}
+                  className="text-[#FF5F00] text-sm font-semibold hover:underline flex items-center gap-1"
+                >
+                  <CheckCheck className="w-4 h-4" />
+                  Mark all read
+                </button>
+              )}
+            </div>
 
-          {/* Notification List */}
-          <div className="overflow-y-auto flex-1">
-            {notifications.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">
-                <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <p>No notifications yet</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-[#2A2A2A]">
-                {notifications.map((notif) => (
-                  <div
-                    key={notif.notiId}
-                    className={`p-4 hover:bg-[#2A2A2A]/30 transition-all ${
-                      !notif.isRead ? 'bg-[#FF5F00]/5' : ''
-                    }`}
-                  >
-                    <div className="flex gap-3">
-                      {/* Icon */}
-                      <div className="text-2xl flex-shrink-0">
-                        {getNotificationIcon(notif.type)}
-                      </div>
+            {/* Notification List */}
+            <div className="overflow-y-auto flex-1">
+              {notifications.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>No notifications yet</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-[#2A2A2A]">
+                  {notifications.map((notif) => (
+                    <div
+                      key={notif.notiId}
+                      className={`p-4 hover:bg-[#2A2A2A]/30 transition-all ${
+                        !notif.isRead ? 'bg-[#FF5F00]/5' : ''
+                      }`}
+                    >
+                      <div className="flex gap-3">
+                        {/* Icon */}
+                        <div className="text-2xl flex-shrink-0">
+                          {getNotificationIcon(notif.type)}
+                        </div>
 
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-white text-sm mb-1">
-                          {notif.title}
-                        </p>
-                        <p className="text-gray-400 text-xs mb-2 line-clamp-2">
-                          {notif.message}
-                        </p>
-                        <p className="text-gray-500 text-xs">
-                          {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
-                        </p>
-                      </div>
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-white text-sm mb-1">
+                            {notif.title}
+                          </p>
+                          <p className="text-gray-400 text-xs mb-2 line-clamp-2">
+                            {notif.message}
+                          </p>
+                          <p className="text-gray-500 text-xs">
+                            {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
+                          </p>
+                        </div>
 
-                      {/* Actions */}
-                      <div className="flex flex-col gap-1">
-                        {!notif.isRead && (
+                        {/* Actions */}
+                        <div className="flex flex-col gap-1">
+                          {!notif.isRead && (
+                            <button
+                              onClick={() => handleMarkAsRead(notif.notiId)}
+                              className="p-1 text-[#FF5F00] hover:bg-[#FF5F00]/20 rounded-lg transition-all"
+                              title="Mark as read"
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleMarkAsRead(notif.notiId)}
-                            className="p-1 text-[#FF5F00] hover:bg-[#FF5F00]/20 rounded-lg transition-all"
-                            title="Mark as read"
+                            onClick={() => handleDelete(notif.notiId)}
+                            className="p-1 text-gray-500 hover:text-red-500 hover:bg-red-500/20 rounded-lg transition-all"
+                            title="Delete"
                           >
-                            <Check className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
-                        )}
-                        <button
-                          onClick={() => handleDelete(notif.notiId)}
-                          className="p-1 text-gray-500 hover:text-red-500 hover:bg-red-500/20 rounded-lg transition-all"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

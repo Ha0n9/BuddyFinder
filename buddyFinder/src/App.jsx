@@ -44,24 +44,31 @@ function App() {
   }, [logout, setUser]);
 
   useEffect(() => {
-    if (isAuthenticated && user?.userId) {
-      const token = localStorage.getItem('token');
-      
-      websocketService.connect(token).then(() => {
+    if (!isAuthenticated || !user?.userId) {
+      websocketService.disconnect();
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    let isActive = true;
+
+    websocketService
+      .connect(token)
+      .then(() => {
+        if (!isActive) return;
         websocketService.subscribeToNotifications(user.userId, (notification) => {
           addNotification(notification);
         });
-      }).catch(err => {
+      })
+      .catch((err) => {
         console.error('Failed to connect to notification WebSocket:', err);
       });
-    }
 
     return () => {
-      if (isAuthenticated) {
-        websocketService.disconnect();
-      }
+      isActive = false;
+      websocketService.unsubscribeFromNotifications(user.userId);
     };
-  }, [isAuthenticated, user?.userId]);
+  }, [isAuthenticated, user?.userId, addNotification]);
 
   // 🔥 Admin routing - Redirect to admin dashboard
   if (isAuthenticated && user?.isAdmin) {

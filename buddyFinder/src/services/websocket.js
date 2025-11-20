@@ -21,6 +21,33 @@ class WebSocketService {
     }
 
     this.connectionPromise = new Promise((resolve, reject) => {
+      let settled = false;
+      const finishSuccess = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
+        this.connectionPromise = null;
+        resolve();
+      };
+      const finishError = (error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutId);
+        this.connectionPromise = null;
+        reject(error);
+      };
+
+      const timeoutId = setTimeout(() => {
+        if (!this.connected) {
+          try {
+            this.client?.deactivate?.();
+          } catch (e) {
+            console.warn("Failed to close stalled WebSocket client", e);
+          }
+          finishError(new Error("WebSocket connection timeout"));
+        }
+      }, 1200);
+
       if (this.client && this.client.active) {
         try {
           this.client.deactivate();
@@ -45,31 +72,30 @@ class WebSocketService {
         onConnect: () => {
           this.connected = true;
           this.reconnectAttempts = 0;
-          this.connectionPromise = null;
-          resolve();
+          finishSuccess();
         },
 
         onDisconnect: () => {
           this.connected = false;
-          this.connectionPromise = null;
+          finishError(new Error("WebSocket disconnected"));
         },
 
         onStompError: (frame) => {
           console.error('❌ STOMP Error:', frame.headers['message']);
           console.error('Details:', frame.body);
           this.connected = false;
-          this.connectionPromise = null;
-          reject(frame);
+          finishError(frame);
         },
 
         onWebSocketError: (error) => {
           console.error('❌ WebSocket Error:', error);
           this.connected = false;
+          finishError(error);
         },
 
         onWebSocketClose: () => {
           this.connected = false;
-          this.connectionPromise = null;
+          finishError(new Error("WebSocket closed"));
         }
       });
 
@@ -138,6 +164,15 @@ class WebSocketService {
     } catch (error) {
       console.error('❌ Failed to subscribe to notifications:', error);
       return null;
+    }
+  }
+
+  unsubscribeFromNotifications(userId) {
+    const key = `notifications-${userId}`;
+    const subscription = this.subscriptions.get(key);
+    if (subscription) {
+      subscription.unsubscribe();
+      this.subscriptions.delete(key);
     }
   }
 
@@ -247,6 +282,15 @@ class WebSocketService {
     }
   }
 
+  unsubscribeFromGroupTyping(roomId) {
+    const key = `group-typing-${roomId}`;
+    const subscription = this.subscriptions.get(key);
+    if (subscription) {
+      subscription.unsubscribe();
+      this.subscriptions.delete(key);
+    }
+  }
+
   /**
    * Send message to group chat via WebSocket
    */
@@ -267,6 +311,24 @@ class WebSocketService {
     } catch (error) {
       console.error('❌ Failed to send group message:', error);
       throw error;
+    }
+  }
+
+  sendGroupTyping(roomId, senderId, typing) {
+    if (!this.isConnected()) {
+      return;
+    }
+
+    const destination = `/app/group/${roomId}/typing`;
+    const payload = { senderId, typing };
+
+    try {
+      this.client.publish({
+        destination,
+        body: JSON.stringify(payload),
+      });
+    } catch (error) {
+      console.error('❌ Failed to send group typing event:', error);
     }
   }
 
@@ -319,6 +381,39 @@ class WebSocketService {
       return subscription;
     } catch (error) {
       console.error('❌ Failed to subscribe to typing events:', error);
+      return null;
+    }
+  }
+
+  subscribeToGroupTyping(roomId, callback) {
+    if (!this.isConnected()) {
+      console.warn('⚠️ Cannot subscribe: WebSocket not connected');
+      return null;
+    }
+
+    const key = `group-typing-${roomId}`;
+    const existing = this.subscriptions.get(key);
+    if (existing) {
+      existing.unsubscribe();
+      this.subscriptions.delete(key);
+    }
+
+    const destination = `/topic/group/${roomId}/typing`;
+
+    try {
+      const subscription = this.client.subscribe(destination, (message) => {
+        try {
+          const parsed = JSON.parse(message.body);
+          callback(parsed);
+        } catch (error) {
+          console.error('❌ Failed to parse group typing event:', error);
+        }
+      });
+
+      this.subscriptions.set(key, subscription);
+      return subscription;
+    } catch (error) {
+      console.error('❌ Failed to subscribe to group typing events:', error);
       return null;
     }
   }

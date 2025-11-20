@@ -1,7 +1,7 @@
 import { formatDistanceToNow } from 'date-fns';
 
 function GroupMessageBubble({ message, currentUserId }) {
-  const isSystem = message.type === 'SYSTEM';
+  const isSystem = message.type === 'SYSTEM' || message.systemMessage;
   const isOwn = message.senderId === currentUserId;
 
   if (isSystem) {

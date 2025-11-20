@@ -1,5 +1,5 @@
 import { motion, useMotionValue, useTransform } from 'framer-motion';
-import { Zap, X, MapPin, Dumbbell, User } from 'lucide-react';
+import { Zap, X, MapPin, Dumbbell, User, Star } from 'lucide-react';
 import { useState } from 'react';
 import { parsePhotos } from '../../utils/photoUtils';
 
@@ -90,8 +90,17 @@ function SwipeCard({ user, onSwipe, style }) {
                 </>
               )}
 
-              {/* Tier Badge */}
-              <div className="absolute top-4 right-4 flex flex-col gap-2">
+              {/* Badges */}
+              <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
+                {user.averageRating > 0 && (
+                  <div className="flex items-center gap-1 bg-black/70 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-semibold text-white shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+                    <Star className="w-4 h-4 text-[#FF5F00]" />
+                    <span>{user.averageRating.toFixed(1)}</span>
+                    <span className="text-[10px] text-gray-300">
+                      ({user.totalRatings || 0})
+                    </span>
+                  </div>
+                )}
                 {user.isVerified && (
                   <span className="bg-[#FF5F00] text-white px-3 py-1 rounded-full text-xs font-bold">
                     Verified
@@ -120,9 +129,21 @@ function SwipeCard({ user, onSwipe, style }) {
         {/* Info Section */}
         <div className="p-6 h-2/5 overflow-y-auto text-white">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-2xl font-extrabold text-[#FF5F00]">
-              {user.name}, {user.age}
-            </h2>
+            <div>
+              <h2 className="text-2xl font-extrabold text-[#FF5F00]">
+                {user.name}, {user.age}
+              </h2>
+              {user.averageRating > 0 && (
+                <div className="flex items-center gap-1 text-sm text-gray-300 mt-1">
+                  <span className="text-xs uppercase text-gray-500">Average Rating:</span>
+                  <Star className="w-4 h-4 text-[#FF5F00]" />
+                  <span className="font-semibold">{user.averageRating.toFixed(1)}</span>
+                  <span className="text-xs text-gray-500">
+                    ({user.totalRatings || 0})
+                  </span>
+                </div>
+              )}
+            </div>
             {user.tier && user.tier !== 'FREE' && (
               <span
                 className={`px-2 py-1 rounded-full text-xs font-bold ${

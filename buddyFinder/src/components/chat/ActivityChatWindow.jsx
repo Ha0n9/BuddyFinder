@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import websocketService from '../../services/websocket';
@@ -20,10 +20,112 @@ function ActivityChatWindow({ roomId, roomName, onLeave }) {
   const [sending, setSending] = useState(false);
   const [reportTarget, setReportTarget] = useState(null);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [typingMembers, setTypingMembers] = useState([]);
   const bottomRef = useRef(null);
+  const typingTimeoutsRef = useRef(new Map());
+  const typingStopTimeoutRef = useRef(null);
+  const typingActiveRef = useRef(false);
+
+  const handleTypingEvent = useCallback(
+    (event) => {
+      if (!event || event.senderId === user?.userId) {
+        return;
+      }
+
+      setTypingMembers((prev) => {
+        const filtered = prev.filter((member) => member.userId !== event.senderId);
+        if (!event.typing) {
+          return filtered;
+        }
+        return [
+          ...filtered,
+          {
+            userId: event.senderId,
+            name: event.senderName || 'Someone',
+          },
+        ];
+      });
+
+      const existingTimeout = typingTimeoutsRef.current.get(event.senderId);
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
+        typingTimeoutsRef.current.delete(event.senderId);
+      }
+
+      if (!event.typing) {
+        return;
+      }
+
+      const timeoutId = setTimeout(() => {
+        typingTimeoutsRef.current.delete(event.senderId);
+        setTypingMembers((prev) =>
+          prev.filter((member) => member.userId !== event.senderId)
+        );
+      }, 3000);
+
+      typingTimeoutsRef.current.set(event.senderId, timeoutId);
+    },
+    [user?.userId]
+  );
+
+  const emitTypingState = useCallback(
+    (typing) => {
+      if (!roomId || !user?.userId || !connected) {
+        return;
+      }
+      try {
+        websocketService.sendGroupTyping(roomId, user.userId, typing);
+      } catch (error) {
+        console.error('Failed to send typing status:', error);
+      }
+    },
+    [roomId, user?.userId, connected]
+  );
+
+  const stopTyping = useCallback(() => {
+    if (typingStopTimeoutRef.current) {
+      clearTimeout(typingStopTimeoutRef.current);
+      typingStopTimeoutRef.current = null;
+    }
+    if (typingActiveRef.current) {
+      typingActiveRef.current = false;
+      emitTypingState(false);
+    }
+  }, [emitTypingState]);
+
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setInput(value);
+
+    if (!user?.userId || !roomId || !connected) {
+      return;
+    }
+
+    if (value.trim() === '') {
+      stopTyping();
+      return;
+    }
+
+    if (!typingActiveRef.current) {
+      typingActiveRef.current = true;
+      emitTypingState(true);
+    }
+
+    if (typingStopTimeoutRef.current) {
+      clearTimeout(typingStopTimeoutRef.current);
+    }
+    typingStopTimeoutRef.current = setTimeout(() => {
+      stopTyping();
+    }, 2000);
+  };
 
   useEffect(() => {
     if (!roomId) return;
+
+    setTypingMembers([]);
+    typingTimeoutsRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
+    typingTimeoutsRef.current.clear();
+    stopTyping();
 
     let isMounted = true;
     const initialize = async () => {
@@ -59,6 +161,17 @@ function ActivityChatWindow({ roomId, roomName, onLeave }) {
               };
           setMessages((prev) => [...prev, normalized]);
 
+          if (!message.systemMessage && message.senderId) {
+            const timeout = typingTimeoutsRef.current.get(message.senderId);
+            if (timeout) {
+              clearTimeout(timeout);
+              typingTimeoutsRef.current.delete(message.senderId);
+            }
+            setTypingMembers((prev) =>
+              prev.filter((member) => member.userId !== message.senderId)
+            );
+          }
+
           if (message.systemMessage) {
             getGroupMembers(roomId)
               .then((res) => setMembers(res.data || []))
@@ -68,6 +181,7 @@ function ActivityChatWindow({ roomId, roomName, onLeave }) {
 
         if (subscription) {
           setConnected(true);
+          websocketService.subscribeToGroupTyping(roomId, handleTypingEvent);
         }
       } catch (error) {
         console.error('Failed to initialize group chat:', error);
@@ -84,12 +198,22 @@ function ActivityChatWindow({ roomId, roomName, onLeave }) {
     return () => {
       isMounted = false;
       websocketService.unsubscribeFromGroup(roomId);
+      websocketService.unsubscribeFromGroupTyping(roomId);
+      stopTyping();
+      typingTimeoutsRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
+      typingTimeoutsRef.current.clear();
     };
-  }, [roomId]);
+  }, [roomId, handleTypingEvent, stopTyping]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    if (typingMembers.length > 0) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [typingMembers]);
 
   const handleSend = async () => {
     if (!input.trim() || sending || !connected) return;
@@ -97,6 +221,7 @@ function ActivityChatWindow({ roomId, roomName, onLeave }) {
     const content = input.trim();
     setSending(true);
     setInput('');
+    stopTyping();
 
     try {
       const encrypted = encryptGroupMessage(roomId, content);
@@ -224,6 +349,12 @@ function ActivityChatWindow({ roomId, roomName, onLeave }) {
                 />
               ))
             )}
+            {typingMembers.length > 0 && (
+              <div className="text-xs text-gray-400 px-1 animate-pulse">
+                {typingMembers.map((member) => member.name || 'Someone').join(', ')}{' '}
+                {typingMembers.length > 1 ? 'are' : 'is'} typing...
+              </div>
+            )}
             <div ref={bottomRef} />
           </div>
 
@@ -232,13 +363,14 @@ function ActivityChatWindow({ roomId, roomName, onLeave }) {
               <input
                 type="text"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={handleInputChange}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     handleSend();
                   }
                 }}
+                onBlur={stopTyping}
                 placeholder={connected ? 'Type a message...' : 'Connecting...'}
                 disabled={!connected || sending}
                 className="flex-1 p-3 rounded-2xl bg-[#1F1F1F] text-white placeholder-gray-500 border border-[#2A2A2A] focus:outline-none focus:ring-2 focus:ring-[#FF5F00]"

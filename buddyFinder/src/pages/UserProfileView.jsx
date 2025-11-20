@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getUserById, likeUser } from '../services/api';
+import { getUserById, likeUser, getRatingStats } from '../services/api';
 import {
   ArrowLeft,
   MapPin,
@@ -21,6 +21,7 @@ function UserProfileView() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [ratingStats, setRatingStats] = useState(null);
   const isViewingSelf = currentUser?.userId?.toString() === userId?.toString();
 
   useEffect(() => {
@@ -30,8 +31,12 @@ function UserProfileView() {
   const fetchUser = async () => {
     setLoading(true);
     try {
-      const response = await getUserById(userId);
-      setUser(response.data);
+      const [userResponse, ratingResponse] = await Promise.all([
+        getUserById(userId),
+        getRatingStats(userId).catch(() => ({ data: null })),
+      ]);
+      setUser(userResponse.data);
+      setRatingStats(ratingResponse?.data || null);
     } catch (error) {
       console.error('Failed to fetch user:', error);
       showError('Failed to load profile');
@@ -103,6 +108,7 @@ function UserProfileView() {
       ? [user.profilePictureUrl]
       : [];
   const hasPhotos = displayPhotos.length > 0;
+  const hasRatings = ratingStats && ratingStats.totalRatings > 0;
 
   return (
     <div className="min-h-screen bg-[#0B0B0B] py-10 px-4 text-white">
@@ -265,6 +271,52 @@ function UserProfileView() {
                 )}
               </div>
             </div>
+
+            {/* Rating Summary */}
+            {ratingStats && (
+              <div className="bg-[#111111] border border-[#2A2A2A] rounded-3xl p-6 shadow-[0_0_15px_rgba(255,95,0,0.05)]">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-[#FF5F00]/20 flex items-center justify-center text-[#FF5F00]">
+                      <Star className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm uppercase tracking-wide">Average Rating</p>
+                      <p className="text-3xl font-extrabold text-white">
+                        {ratingStats.averageRating?.toFixed(1) ?? '0.0'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-gray-400 text-sm">
+                    {hasRatings
+                      ? `${ratingStats.totalRatings} review${ratingStats.totalRatings > 1 ? 's' : ''}`
+                      : 'No ratings yet'}
+                  </div>
+                </div>
+                {hasRatings && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                    <div className="bg-[#1A1A1A] rounded-2xl p-4 border border-[#2A2A2A]">
+                      <p className="text-gray-500 text-xs uppercase mb-1">Reliability</p>
+                      <p className="text-white text-xl font-semibold">
+                        {ratingStats.averageReliability?.toFixed(1)}
+                      </p>
+                    </div>
+                    <div className="bg-[#1A1A1A] rounded-2xl p-4 border border-[#2A2A2A]">
+                      <p className="text-gray-500 text-xs uppercase mb-1">Punctuality</p>
+                      <p className="text-white text-xl font-semibold">
+                        {ratingStats.averagePunctuality?.toFixed(1)}
+                      </p>
+                    </div>
+                    <div className="bg-[#1A1A1A] rounded-2xl p-4 border border-[#2A2A2A]">
+                      <p className="text-gray-500 text-xs uppercase mb-1">Friendliness</p>
+                      <p className="text-white text-xl font-semibold">
+                        {ratingStats.averageFriendliness?.toFixed(1)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Bio */}
             {user.bio && (

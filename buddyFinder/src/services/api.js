@@ -40,6 +40,9 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const message = error.response?.data?.message || '';
     const url = error.config?.url || '';
+    if (error.config?.headers?.['X-Skip-Error-Toast']) {
+      return Promise.reject(error);
+    }
     const now = Date.now();
 
     // Prevent duplicate toasts within 1 second
@@ -147,6 +150,7 @@ export const addReportMessage = (reportId, payload) =>
 // ================== RATING ==================
 export const submitRating = (data) => api.post('/ratings', data);
 export const getRatings = (userId) => api.get(`/ratings/user/${userId}`);
+export const getRatingStats = (userId) => api.get(`/ratings/stats/${userId}`);
 export const createRating = async (payload) => {
   const response = await api.post('/ratings', payload);
   return response.data;
@@ -156,7 +160,8 @@ export const getUserById = (userId) => api.get(`/users/${userId}`);
 
 // ================== NOTIFICATIONS ==================
 export const getNotifications = () => api.get('/notifications');
-export const markNotificationAsRead = (notiId) => api.put(`/notifications/${notiId}/read`);
+export const markNotificationAsRead = (notiId, config = {}) =>
+  api.put(`/notifications/${notiId}/read`, null, config);
 export const markAllNotificationsAsRead = () => api.put('/notifications/read-all');
 export const deleteNotification = (notiId) => api.delete(`/notifications/${notiId}`);
 
