@@ -2,13 +2,13 @@
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import {
-  Heart,
   Users,
   Dumbbell,
   MessageCircle,
   ArrowRight,
   Activity,
   TrendingUp,
+  Zap,
 } from 'lucide-react';
 
 function HomePage() {
@@ -75,7 +75,7 @@ function AuthenticatedContent({ user }) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <QuickActionCard
             to="/search"
-            icon={<Heart className="w-7 h-7" />}
+            icon={<Zap className="w-7 h-7" />}
             title="Find Buddies"
             subtitle="Start matching"
             gradient="from-[#FF5F00] to-[#FF8C00]"
@@ -106,7 +106,7 @@ function AuthenticatedContent({ user }) {
         {/* Dashboard Stats */}
         <div className="grid md:grid-cols-3 gap-6">
           <DashboardStatCard
-            icon={<Heart className="w-6 h-6" />}
+            icon={<Zap className="w-6 h-6" />}
             number="12"
             label="Active Matches"
             change="+2 this week"

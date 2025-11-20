@@ -1,7 +1,7 @@
 // src/components/profile/ProfileCard.jsx
 import { useAuthStore } from '../../store/authStore';
 import { Link } from 'react-router-dom';
-import { Edit, MapPin, Heart, Calendar, Clock8, Sparkles, Star } from 'lucide-react';
+import { Edit, MapPin, Calendar, Clock8, Sparkles, Star, Zap } from 'lucide-react';
 
 function ProfileCard({ verificationStatus }) {
   const { user } = useAuthStore();
@@ -70,7 +70,7 @@ function ProfileCard({ verificationStatus }) {
         </div>
 
         <div className="flex items-start">
-          <Heart className="w-5 h-5 text-white mr-3 mt-1" />
+          <Zap className="w-5 h-5 text-white mr-3 mt-1" />
           <div>
             <p className="text-white opacity-70 text-sm">Interests</p>
             <p className="text-white font-medium">{user.interests || 'Not set'}</p>

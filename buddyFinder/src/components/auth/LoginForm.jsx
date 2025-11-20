@@ -11,7 +11,7 @@ import { showError, showSuccess } from '../../utils/toast';
 const schema = yup.object({
   email: yup
     .string()
-    .matches(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'Invalid email')
+    .matches(/^(?=.*[A-Za-z])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/, 'Invalid email')
     .required('Email is required'),
   password: yup
     .string()

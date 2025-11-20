@@ -46,10 +46,8 @@ export default function CheckoutPage() {
     setProcessing(true);
     try {
       const paymentResult = await processMockPayment(plan, paymentMethod);
-      console.log("Payment Result:", paymentResult);
 
       const subscriptionResult = await upgradeMockSubscription(user.userId, plan);
-      console.log("Subscription Result:", subscriptionResult);
 
       const backendResponse = await upgradeSubscription(plan);
       setUser(backendResponse.data);

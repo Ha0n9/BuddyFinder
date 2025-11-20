@@ -1,4 +1,5 @@
 // src/components/profile/ProfileEdit.jsx
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -6,7 +7,7 @@ import { useAuthStore } from '../../store/authStore';
 import { updateProfile } from '../../services/api';
 import Button from '../common/Button';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Navigation } from 'lucide-react';
 import { showError, showSuccess } from '../../utils/toast';
 
 const MBTI_TYPES = [
@@ -53,8 +54,10 @@ function ProfileEdit() {
   const { user, setUser } = useAuthStore();
   const navigate = useNavigate();
   const isPremiumTier = user?.tier === 'PREMIUM' || user?.tier === 'ELITE';
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState('');
 
-  const { register, handleSubmit, formState: { errors } } = useForm({
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
       name: user?.name || '',
@@ -67,8 +70,15 @@ function ProfileEdit() {
       availability: user?.availability || '',
       zodiacSign: user?.zodiacSign || '',
       mbtiType: user?.mbtiType || '',
+      latitude: user?.latitude ?? null,
+      longitude: user?.longitude ?? null,
     }
   });
+  const latitude = watch('latitude');
+  const longitude = watch('longitude');
+  const hasPreciseLocation =
+    typeof latitude === 'number' && Number.isFinite(latitude) &&
+    typeof longitude === 'number' && Number.isFinite(longitude);
 
   const onSubmit = async (data) => {
     try {
@@ -100,6 +110,8 @@ function ProfileEdit() {
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <input type="hidden" {...register('latitude', { valueAsNumber: true })} />
+            <input type="hidden" {...register('longitude', { valueAsNumber: true })} />
             <div>
               <label className="block text-gray-400 mb-2">Name</label>
               <input
@@ -162,6 +174,65 @@ function ProfileEdit() {
                 placeholder="Vancouver"
               />
               {errors.location && <p className="text-red-400 text-sm mt-1">{errors.location.message}</p>}
+            </div>
+
+            <div className="bg-[#0F0F0F] border border-[#2A2A2A] rounded-2xl p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <p className="text-gray-300 font-semibold">Precise Location</p>
+                  <p className="text-sm text-gray-500">Share GPS coordinates to appear in nearby searches.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setGeoError('');
+                    if (!navigator.geolocation) {
+                      setGeoError('Geolocation is not supported in this browser.');
+                      return;
+                    }
+                    setGeoLoading(true);
+                    navigator.geolocation.getCurrentPosition(
+                      (position) => {
+                        setValue('latitude', Number(position.coords.latitude.toFixed(6)), { shouldDirty: true });
+                        setValue('longitude', Number(position.coords.longitude.toFixed(6)), { shouldDirty: true });
+                        setGeoLoading(false);
+                      },
+                      (error) => {
+                        setGeoError(error.message || 'Unable to fetch your location.');
+                        setGeoLoading(false);
+                      },
+                      { enableHighAccuracy: true, timeout: 10000 }
+                    );
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#FF5F00]/15 text-[#FF5F00] font-semibold text-sm hover:bg-[#FF5F00]/25 transition disabled:opacity-50"
+                  disabled={geoLoading}
+                >
+                  <Navigation className="w-4 h-4" />
+                  {geoLoading ? 'Locating...' : 'Use my location'}
+                </button>
+              </div>
+              <div className="mt-3 text-sm text-gray-400 space-y-1">
+                {hasPreciseLocation ? (
+                  <>
+                    <p>Latitude: {latitude}</p>
+                    <p>Longitude: {longitude}</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setValue('latitude', null, { shouldDirty: true });
+                        setValue('longitude', null, { shouldDirty: true });
+                        setGeoError('');
+                      }}
+                      className="text-[#FF5F00] font-semibold hover:underline"
+                    >
+                      Clear coordinates
+                    </button>
+                  </>
+                ) : (
+                  <p>Add coordinates to help the app find buddies in your radius.</p>
+                )}
+                {geoError && <p className="text-red-400">{geoError}</p>}
+              </div>
             </div>
 
             <div>

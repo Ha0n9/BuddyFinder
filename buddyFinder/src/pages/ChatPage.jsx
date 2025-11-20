@@ -6,6 +6,7 @@ import ActivityChatWindow from '../components/chat/ActivityChatWindow';
 import { MessageCircle, User, Users, MoreHorizontal } from 'lucide-react';
 import ReportModal from '../components/chat/ReportModal';
 import { useNotificationStore } from '../store/notificationStore';
+import { getPrimaryPhoto } from '../utils/photoUtils';
 
 function ChatPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -225,6 +226,13 @@ function ChatPage() {
                 const isActive = selectedConversation?.id === conversation.id;
                 const isGroup = conversation.type === 'group';
                 const unread = unreadByConversation[conversation.id] || 0;
+                const avatarUrl =
+                  !isGroup && conversation.matchData
+                    ? getPrimaryPhoto(
+                        conversation.matchData.photos,
+                        conversation.matchData.profilePictureUrl
+                      )
+                    : null;
                 return (
                   <div key={conversation.id} className="relative">
                     <div
@@ -244,9 +252,19 @@ function ChatPage() {
                       }`}
                     >
                       <div className="flex items-center">
-                        <div className="w-12 h-12 bg-[#FF5F00] rounded-full flex items-center justify-center mr-3 flex-shrink-0 shadow-[0_0_10px_rgba(255,95,0,0.4)]">
+                        <div className="w-12 h-12 rounded-full mr-3 flex-shrink-0 shadow-[0_0_10px_rgba(255,95,0,0.4)] bg-[#2A2A2A] overflow-hidden flex items-center justify-center">
                           {isGroup ? (
                             <Users className="w-6 h-6 text-white" />
+                          ) : avatarUrl ? (
+                            <img
+                              src={avatarUrl}
+                              alt={conversation.title}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = 'https://via.placeholder.com/80?text=BF';
+                              }}
+                            />
                           ) : (
                             <User className="w-6 h-6 text-white" />
                           )}

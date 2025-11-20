@@ -7,6 +7,7 @@ import Button from '../common/Button';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { showError, showSuccess } from '../../utils/toast';
+import { Navigation } from 'lucide-react';
 
 const schema = yup.object({
   name: yup
@@ -15,7 +16,7 @@ const schema = yup.object({
     .required('Name is required'),
   email: yup
     .string()
-    .matches(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'Invalid email')
+    .matches(/^(?=.*[A-Za-z])[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/, 'Invalid email')
     .required('Email is required'),
   password: yup
     .string()
@@ -40,16 +41,25 @@ function RegisterForm() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState('');
 
   const {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: { referralCode: '' },
+    defaultValues: { referralCode: '', latitude: null, longitude: null },
   });
+
+  const latitude = watch('latitude');
+  const longitude = watch('longitude');
+  const hasPreciseLocation =
+    typeof latitude === 'number' && Number.isFinite(latitude) &&
+    typeof longitude === 'number' && Number.isFinite(longitude);
 
   const referralCode = searchParams.get('ref') || '';
 
@@ -75,12 +85,43 @@ function RegisterForm() {
     }
   };
 
+  const handleUseLocation = () => {
+    setGeoError('');
+    if (!navigator.geolocation) {
+      setGeoError('Geolocation is not supported in this browser.');
+      return;
+    }
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = Number(position.coords.latitude.toFixed(6));
+        const lon = Number(position.coords.longitude.toFixed(6));
+        setValue('latitude', lat, { shouldDirty: true });
+        setValue('longitude', lon, { shouldDirty: true });
+        setGeoLoading(false);
+      },
+      (error) => {
+        setGeoError(error.message || 'Unable to fetch your location.');
+        setGeoLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const clearCoordinates = () => {
+    setValue('latitude', null, { shouldDirty: true });
+    setValue('longitude', null, { shouldDirty: true });
+    setGeoError('');
+  };
+
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
       className="max-w-md mx-auto space-y-5"
     >
       <input type="hidden" {...register('referralCode')} />
+      <input type="hidden" {...register('latitude', { valueAsNumber: true })} />
+      <input type="hidden" {...register('longitude', { valueAsNumber: true })} />
 
       {[
         { id: 'name', label: 'Name', type: 'text', maxLength: 35 },
@@ -127,6 +168,38 @@ function RegisterForm() {
           )}
         </div>
       ))}
+
+      <div className="bg-[#101010] border border-[#2A2A2A] rounded-2xl p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-white">Precise Location (optional)</p>
+            <p className="text-xs text-gray-400">We only use this to find buddies near you.</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleUseLocation}
+            disabled={geoLoading || loading}
+            className="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full bg-[#FF5F00]/20 text-[#FF5F00] hover:bg-[#FF5F00]/30 disabled:opacity-50"
+          >
+            <Navigation className="w-4 h-4" />
+            {geoLoading ? 'Locating...' : 'Use my location'}
+          </button>
+        </div>
+        {hasPreciseLocation && (
+          <div className="text-xs text-gray-300 space-y-1">
+            <p>Latitude: {latitude}</p>
+            <p>Longitude: {longitude}</p>
+            <button
+              type="button"
+              onClick={clearCoordinates}
+              className="text-[#FF5F00] font-semibold hover:underline"
+            >
+              Clear precise location
+            </button>
+          </div>
+        )}
+        {geoError && <p className="text-xs text-red-400">{geoError}</p>}
+      </div>
 
       <Button
         type="submit"

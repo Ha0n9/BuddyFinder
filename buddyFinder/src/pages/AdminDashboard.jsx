@@ -6,6 +6,7 @@ import {
   getAllRatings,
   getAllReports,
   getSupportRequests,
+  getAdminAccounts,
 } from "../services/adminApi";
 import OverviewCards from "../components/admin/OverviewCards";
 import UsersTable from "../components/admin/UsersTable";
@@ -15,10 +16,13 @@ import RefundsTable from "../components/admin/RefundsTable";
 import VerificationsTable from "../components/admin/VerificationsTable";
 import ReportsTable from "../components/admin/ReportsTable";
 import SupportRequestsTable from "../components/admin/SupportRequestsTable";
-import { Search, Download } from "lucide-react";
+import AdminAccountsTable from "../components/admin/AdminAccountsTable";
+import { Search, Download, Menu } from "lucide-react";
 import { showError, showSuccess } from "../utils/toast";
+import { useAuthStore } from "../store/authStore";
 
 const AdminDashboard = () => {
+  const { user } = useAuthStore();
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
   const [activities, setActivities] = useState([]);
@@ -30,8 +34,10 @@ const AdminDashboard = () => {
   const [verifications, setVerifications] = useState([]);
   const [reports, setReports] = useState([]);
   const [supportRequests, setSupportRequests] = useState([]);
+  const [adminAccounts, setAdminAccounts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [exportingFormat, setExportingFormat] = useState(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const refreshOverview = async () => {
     const res = await getAdminDashboard();
@@ -83,11 +89,16 @@ const AdminDashboard = () => {
     setSupportRequests(Array.isArray(data) ? data : data?.items || []);
   };
 
+  const refreshAdminAccounts = async () => {
+    const data = await getAdminAccounts();
+    setAdminAccounts(Array.isArray(data) ? data : data?.items || []);
+  };
+
   const initialLoad = async () => {
     try {
       setLoading(true);
       setError(null);
-      await Promise.all([
+      const loaders = [
         refreshOverview(), 
         refreshUsers(), 
         refreshActivities(),
@@ -96,7 +107,11 @@ const AdminDashboard = () => {
         refreshVerifications(),
         refreshReports(),
         refreshSupportRequests()
-      ]);
+      ];
+      if (user?.isSuperAdmin) {
+        loaders.push(refreshAdminAccounts());
+      }
+      await Promise.all(loaders);
     } catch (e) {
       console.error(e);
       setError("Failed to load admin data.");
@@ -107,7 +122,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     initialLoad();
-  }, []);
+  }, [user?.isSuperAdmin]);
 
   useEffect(() => {
     if (activeTab === "ratings" && ratings.length === 0) {
@@ -221,17 +236,31 @@ const AdminDashboard = () => {
   const filteredReports = filterItems(reports, ["reason", "description"]);
   const filteredSupport = filterItems(supportRequests, ["email", "message"]);
 
+  const tabs = [
+    "overview",
+    "users",
+    "activities",
+    "ratings",
+    "refunds",
+    "verifications",
+    "reports",
+    "support",
+  ];
+  if (user?.isSuperAdmin) {
+    tabs.push("admins");
+  }
+
   return (
-    <div className="min-h-screen bg-[#0B0B0B] text-white flex">
+    <div className="min-h-screen bg-[#0B0B0B] text-white flex flex-col md:flex-row">
       {/* Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 border-r border-[#2A2A2A] bg-[#111111] shadow-[4px_0_10px_rgba(255,95,0,0.05)]">
+      <aside className="hidden md:flex flex-col w-64 border-r border-[#2A2A2A] bg-[#111111] shadow-[4px_0_10px_rgba(255,95,0,0.05)] flex-shrink-0">
         <div className="p-6 border-b border-[#2A2A2A]">
           <h1 className="text-xl font-extrabold text-[#FF5F00] tracking-tight">
             BuddyFinder Admin
           </h1>
         </div>
         <nav className="flex-1 mt-4 space-y-1 p-3">
-          {["overview", "users", "activities", "ratings", "refunds", "verifications", "reports", "support"].map((tab) => {
+          {tabs.map((tab) => {
             const badgeCount =
               tab === "refunds"
                 ? refunds.filter((r) => r.status === "PENDING").length
@@ -272,14 +301,23 @@ const AdminDashboard = () => {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 p-6 md:p-10">
+      <main className="flex-1 p-4 sm:p-6 md:p-10">
         {/* Header */}
-        <header className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-[#2A2A2A] pb-4 mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-[#FF5F00]">
-            Admin Dashboard
-          </h1>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="relative w-full sm:w-64 z-[100]">
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[#2A2A2A] pb-4 mb-6">
+          <div className="flex items-center gap-3">
+            <button
+              className="md:hidden inline-flex items-center justify-center p-2 rounded-xl bg-[#1A1A1A] border border-[#2A2A2A]"
+              onClick={() => setMobileNavOpen((prev) => !prev)}
+              aria-label="Toggle navigation"
+            >
+              <Menu className="w-5 h-5 text-white" />
+            </button>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#FF5F00]">
+              Admin Dashboard
+            </h1>
+          </div>
+          <div className="flex flex-col sm:flex-row w-full sm:w-auto gap-2">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
               <input
                 placeholder="Search..."
@@ -288,24 +326,48 @@ const AdminDashboard = () => {
                 className="w-full bg-[#111111] border border-[#2A2A2A] rounded-xl pl-10 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF5F00]"
               />
             </div>
-            <button
-              onClick={() => handleExportUsers("json")}
-              disabled={!!exportingFormat}
-              className="flex items-center gap-2 px-4 py-2 bg-[#FF5F00] hover:bg-[#ff7133] rounded-xl text-white font-bold text-sm shadow-[0_2px_8px_rgba(255,95,0,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Download className="w-4 h-4" />
-              JSON
-            </button>
-            <button
-              onClick={() => handleExportUsers("csv")}
-              disabled={!!exportingFormat}
-              className="flex items-center gap-2 px-4 py-2 bg-[#FF5F00] hover:bg-[#ff7133] rounded-xl text-white font-bold text-sm shadow-[0_2px_8px_rgba(255,95,0,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Download className="w-4 h-4" />
-              CSV
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleExportUsers("json")}
+                disabled={!!exportingFormat}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#FF5F00] hover:bg-[#ff7133] rounded-xl text-white font-bold text-sm shadow-[0_2px_8px_rgba(255,95,0,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download className="w-4 h-4" />
+                JSON
+              </button>
+              <button
+                onClick={() => handleExportUsers("csv")}
+                disabled={!!exportingFormat}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#FF5F00] hover:bg-[#ff7133] rounded-xl text-white font-bold text-sm shadow-[0_2px_8px_rgba(255,95,0,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download className="w-4 h-4" />
+                CSV
+              </button>
+            </div>
           </div>
         </header>
+
+        {/* Mobile navigation */}
+        {mobileNavOpen && (
+          <nav className="md:hidden mb-6 bg-[#111111] border border-[#2A2A2A] rounded-2xl p-3 space-y-2">
+            {tabs.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => {
+                  setActiveTab(tab);
+                  setMobileNavOpen(false);
+                }}
+                className={`w-full text-left px-4 py-2 rounded-xl text-sm font-semibold ${
+                  activeTab === tab
+                    ? "bg-[#FF5F00] text-white"
+                    : "bg-[#1A1A1A] text-gray-300"
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
+          </nav>
+        )}
 
         {/* Content */}
         <section className="space-y-8">
@@ -399,6 +461,15 @@ const AdminDashboard = () => {
               <SupportRequestsTable
                 requests={filteredSupport}
                 refresh={refreshSupportRequests}
+              />
+            </div>
+          )}
+          {activeTab === "admins" && user?.isSuperAdmin && (
+            <div className="bg-[#111111] border border-[#2A2A2A] rounded-2xl p-6 shadow-[0_0_10px_rgba(255,95,0,0.1)]">
+              <AdminAccountsTable
+                accounts={adminAccounts}
+                refresh={refreshAdminAccounts}
+                currentUser={user}
               />
             </div>
           )}

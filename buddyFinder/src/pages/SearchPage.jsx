@@ -3,7 +3,7 @@ import { searchBuddies, likeUser, passUser } from '../services/api';
 import SwipeCard from '../components/search/SwipeCard';
 import SearchFilters from '../components/search/SearchFilters';
 import MatchCard from '../components/search/MatchCard';
-import { Heart, X, RotateCcw, Sparkles, Sliders, Zap } from 'lucide-react';
+import { X, RotateCcw, Sparkles, Sliders, Zap } from 'lucide-react';
 import { showSuccess, showError } from '../utils/toast';
 
 function SearchPage() {
@@ -18,6 +18,13 @@ function SearchPage() {
     activity: '',
     location: '',
     time: '',
+    mbtiType: '',
+    zodiacSign: '',
+    fitnessLevel: '',
+    gender: '',
+    latitude: null,
+    longitude: null,
+    radiusKm: null,
   });
 
   useEffect(() => {
@@ -218,7 +225,7 @@ function SearchPage() {
 
                   <button onClick={handleLike} className="group relative">
                     <div className="w-20 h-20 bg-[#FF5F00] hover:bg-[#ff7133] rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(255,95,0,0.4)] hover:scale-110 transition-transform duration-200">
-                      <Heart className="w-10 h-10 text-white" fill="currentColor" strokeWidth={2} />
+                      <Zap className="w-10 h-10 text-white" strokeWidth={2} />
                     </div>
                     <span className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs text-gray-400 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
                       Like

@@ -59,7 +59,6 @@ function ProfilePage() {
   const fetchProfile = async () => {
     try {
       const response = await getProfile();
-      console.log('📸 Profile data:', response.data);
       setProfile(response.data);
       if (response.data?.user) {
         setUser(response.data.user);
@@ -94,7 +93,6 @@ function ProfilePage() {
   };
 
   const handlePhotoUploaded = (newPhotos) => {
-    console.log('✅ Photos updated callback:', newPhotos);
     setProfile((prev) => {
       if (!prev) return prev;
       return {

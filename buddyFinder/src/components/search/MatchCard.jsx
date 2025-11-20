@@ -1,21 +1,11 @@
 import { MapPin, Clock, Dumbbell, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Button from '../common/Button';
+import { getPrimaryPhoto } from '../../utils/photoUtils';
 
 function MatchCard({ match, onRequest }) {
-  const parsePhotos = (photosJson) => {
-    if (!photosJson || photosJson === 'null' || photosJson === '[]') return [];
-    try {
-      if (typeof photosJson === 'string') return JSON.parse(photosJson);
-      if (Array.isArray(photosJson)) return photosJson;
-      return [];
-    } catch {
-      return [];
-    }
-  };
-
-  const photos = parsePhotos(match.photos);
-  const hasPhoto = photos.length > 0;
+  const primaryPhoto = getPrimaryPhoto(match.photos, match.profilePictureUrl);
+  const hasPhoto = Boolean(primaryPhoto);
 
   return (
     <div className="bg-[#111111] border border-[#2A2A2A] rounded-2xl shadow-[0_0_20px_rgba(255,95,0,0.15)] overflow-hidden hover:shadow-[0_0_25px_rgba(255,95,0,0.25)] transition-all duration-300 transform hover:-translate-y-1">
@@ -24,7 +14,7 @@ function MatchCard({ match, onRequest }) {
         <div className="md:w-48 h-48 md:h-auto relative bg-[#0B0B0B] flex-shrink-0">
           {hasPhoto ? (
             <img
-              src={photos[0]}
+              src={primaryPhoto}
               alt={match.name}
               className="w-full h-full object-cover"
               onError={(e) => {

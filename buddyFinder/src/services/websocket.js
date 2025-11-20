@@ -9,47 +9,56 @@ class WebSocketService {
     this.connected = false;
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
+    this.connectionPromise = null;
   }
 
   connect(token) {
-    return new Promise((resolve, reject) => {
-      console.log('🔌 Attempting WebSocket connection...');
-      
+    if (this.client && this.client.connected && this.connected) {
+      return Promise.resolve();
+    }
+    if (this.connectionPromise) {
+      return this.connectionPromise;
+    }
+
+    this.connectionPromise = new Promise((resolve, reject) => {
+      if (this.client && this.client.active) {
+        try {
+          this.client.deactivate();
+        } catch (e) {
+          console.warn('Failed to deactivate stale WebSocket client', e);
+        }
+      }
+
       this.client = new Client({
-        webSocketFactory: () => {
-          const socket = new SockJS('http://localhost:8080/ws');
-          console.log('🌐 SockJS socket created');
-          return socket;
-        },
+        webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
         
         connectHeaders: {
           Authorization: `Bearer ${token}`
         },
 
-        debug: (str) => {
-          console.log('🔍 STOMP:', str);
-        },
+        debug: () => {},
 
         reconnectDelay: 5000,
         heartbeatIncoming: 4000,
         heartbeatOutgoing: 4000,
 
-        onConnect: (frame) => {
-          console.log('✅ WebSocket Connected!', frame);
+        onConnect: () => {
           this.connected = true;
           this.reconnectAttempts = 0;
+          this.connectionPromise = null;
           resolve();
         },
 
         onDisconnect: () => {
-          console.log('⚠️ WebSocket Disconnected');
           this.connected = false;
+          this.connectionPromise = null;
         },
 
         onStompError: (frame) => {
           console.error('❌ STOMP Error:', frame.headers['message']);
           console.error('Details:', frame.body);
           this.connected = false;
+          this.connectionPromise = null;
           reject(frame);
         },
 
@@ -58,18 +67,20 @@ class WebSocketService {
           this.connected = false;
         },
 
-        onWebSocketClose: (event) => {
-          console.log('🔌 WebSocket Closed:', event.reason);
+        onWebSocketClose: () => {
           this.connected = false;
+          this.connectionPromise = null;
         }
       });
 
       this.client.activate();
     });
+
+    return this.connectionPromise;
   }
 
   isConnected() {
-    return this.connected && this.client?.connected;
+    return this.connected;
   }
 
   /**
@@ -85,14 +96,11 @@ class WebSocketService {
     this.unsubscribeFromMatch(matchId);
 
     const destination = `/topic/match/${matchId}`;
-    console.log(`📡 Subscribing to: ${destination}`);
     
     try {
       const subscription = this.client.subscribe(destination, (message) => {
-        console.log('📨 Received message:', message.body);
         try {
           const parsedMessage = JSON.parse(message.body);
-          console.log('✅ Parsed message:', parsedMessage);
           callback(parsedMessage);
         } catch (error) {
           console.error('❌ Failed to parse message:', error);
@@ -100,7 +108,6 @@ class WebSocketService {
       });
 
       this.subscriptions.set(`match-${matchId}`, subscription);
-      console.log(`✅ Successfully subscribed to match ${matchId}`);
       
       return subscription;
     } catch (error) {
@@ -119,17 +126,14 @@ class WebSocketService {
     }
 
     const destination = `/topic/notifications/${userId}`;
-    console.log(`📡 Subscribing to notifications: ${destination}`);
     
     try {
       const subscription = this.client.subscribe(destination, (message) => {
         const notification = JSON.parse(message.body);
-        console.log('🔔 Received notification:', notification);
         callback(notification);
       });
 
       this.subscriptions.set(`notifications-${userId}`, subscription);
-      console.log(`✅ Successfully subscribed to notifications for user ${userId}`);
       return subscription;
     } catch (error) {
       console.error('❌ Failed to subscribe to notifications:', error);
@@ -152,17 +156,32 @@ class WebSocketService {
       content
     };
 
-    console.log(`📤 Sending message to ${destination}:`, payload);
-
     try {
       this.client.publish({
         destination: destination,
         body: JSON.stringify(payload)
       });
-      console.log('✅ Message sent via WebSocket');
     } catch (error) {
       console.error('❌ Failed to send message:', error);
       throw error;
+    }
+  }
+
+  sendTyping(matchId, senderId, typing) {
+    if (!this.isConnected()) {
+      return;
+    }
+
+    const destination = `/app/chat/${matchId}/typing`;
+    const payload = { senderId, typing };
+
+    try {
+      this.client.publish({
+        destination,
+        body: JSON.stringify(payload)
+      });
+    } catch (error) {
+      console.error('❌ Failed to send typing event:', error);
     }
   }
 
@@ -172,7 +191,6 @@ class WebSocketService {
     if (subscription) {
       subscription.unsubscribe();
       this.subscriptions.delete(key);
-      console.log(`✅ Unsubscribed from match ${matchId}`);
     }
   }
 
@@ -192,19 +210,15 @@ class WebSocketService {
     if (existing) {
       existing.unsubscribe();
       this.subscriptions.delete(key);
-      console.log(`♻️ Re-subscribing to group ${roomId}`);
     }
 
     const destination = `/topic/group/${roomId}`;
-    console.log(`📡 Subscribing to group chat: ${destination}`);
 
     try {
       const subscription = this.client.subscribe(destination, (message) => {
-        console.log('📨 Group message received:', message.body);
 
         try {
           const parsed = JSON.parse(message.body);
-          console.log('✅ Parsed group message:', parsed);
           callback(parsed);
         } catch (err) {
           console.error('❌ Failed to parse group chat message:', err);
@@ -212,7 +226,6 @@ class WebSocketService {
       });
 
       this.subscriptions.set(key, subscription);
-      console.log(`✅ Subscribed to group ${roomId}`);
 
       return subscription;
     } catch (err) {
@@ -231,7 +244,6 @@ class WebSocketService {
     if (subscription) {
       subscription.unsubscribe();
       this.subscriptions.delete(key);
-      console.log(`🛑 Unsubscribed from group room ${roomId}`);
     }
   }
 
@@ -247,14 +259,11 @@ class WebSocketService {
     const destination = `/app/group/${roomId}`;
     const payload = { senderId, content };
 
-    console.log(`📤 Sending group message to ${destination}:`, payload);
-
     try {
       this.client.publish({
         destination: destination,
         body: JSON.stringify(payload)
       });
-      console.log('✅ Group message sent');
     } catch (error) {
       console.error('❌ Failed to send group message:', error);
       throw error;
@@ -262,16 +271,55 @@ class WebSocketService {
   }
 
   disconnect() {
-    console.log('🔌 Disconnecting WebSocket...');
     if (this.client) {
       this.subscriptions.forEach((sub, key) => {
-        console.log(`Unsubscribing from ${key}`);
         sub.unsubscribe();
       });
       this.subscriptions.clear();
       this.client.deactivate();
       this.connected = false;
-      console.log('✅ WebSocket disconnected');
+    }
+  }
+
+  unsubscribeFromTyping(matchId) {
+    const key = `typing-${matchId}`;
+    const subscription = this.subscriptions.get(key);
+    if (subscription) {
+      subscription.unsubscribe();
+      this.subscriptions.delete(key);
+    }
+  }
+
+  subscribeToTyping(matchId, callback) {
+    if (!this.isConnected()) {
+      console.warn('⚠️ Cannot subscribe: WebSocket not connected');
+      return null;
+    }
+
+    const key = `typing-${matchId}`;
+    const existing = this.subscriptions.get(key);
+    if (existing) {
+      existing.unsubscribe();
+      this.subscriptions.delete(key);
+    }
+
+    const destination = `/topic/match/${matchId}/typing`;
+
+    try {
+      const subscription = this.client.subscribe(destination, (message) => {
+        try {
+          const parsed = JSON.parse(message.body);
+          callback(parsed);
+        } catch (error) {
+          console.error('❌ Failed to parse typing event:', error);
+        }
+      });
+
+      this.subscriptions.set(key, subscription);
+      return subscription;
+    } catch (error) {
+      console.error('❌ Failed to subscribe to typing events:', error);
+      return null;
     }
   }
 }

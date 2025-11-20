@@ -7,6 +7,7 @@ import GroupMessageBubble from './GroupMessageBubble';
 import ReportModal from './ReportModal';
 import { Users, LogOut, Send, Flag, User } from 'lucide-react';
 import { showError, showSuccess } from '../../utils/toast';
+import { encryptGroupMessage, decryptGroupMessage } from '../../utils/chatCrypto';
 
 function ActivityChatWindow({ roomId, roomName, onLeave }) {
   const navigate = useNavigate();
@@ -34,7 +35,14 @@ function ActivityChatWindow({ roomId, roomName, onLeave }) {
         ]);
 
         if (!isMounted) return;
-        setMessages(messagesRes.data || []);
+        const decryptedMessages = (messagesRes.data || []).map((message) => ({
+          ...message,
+          content: message.systemMessage
+            ? message.content
+            : decryptGroupMessage(roomId, message.content),
+        }));
+
+        setMessages(decryptedMessages);
         setMembers(membersRes.data || []);
 
         const token = localStorage.getItem('token');
@@ -43,9 +51,15 @@ function ActivityChatWindow({ roomId, roomName, onLeave }) {
         }
 
         const subscription = websocketService.subscribeToGroup(roomId, (message) => {
-          setMessages((prev) => [...prev, message]);
+          const normalized = message.systemMessage
+            ? message
+            : {
+                ...message,
+                content: decryptGroupMessage(roomId, message.content),
+              };
+          setMessages((prev) => [...prev, normalized]);
 
-          if (message.type === 'SYSTEM') {
+          if (message.systemMessage) {
             getGroupMembers(roomId)
               .then((res) => setMembers(res.data || []))
               .catch((err) => console.error('Failed to refresh member list', err));
@@ -85,7 +99,8 @@ function ActivityChatWindow({ roomId, roomName, onLeave }) {
     setInput('');
 
     try {
-      websocketService.sendGroupMessage(roomId, user?.userId, content);
+      const encrypted = encryptGroupMessage(roomId, content);
+      websocketService.sendGroupMessage(roomId, user?.userId, encrypted);
     } catch (error) {
       console.error('Failed to send group message:', error);
       showError('Failed to send message');
@@ -107,7 +122,6 @@ function ActivityChatWindow({ roomId, roomName, onLeave }) {
   };
 
   const openReportModal = (member) => {
-    console.log("📣 Member to report:", member);
     if (!member || member.userId === user?.userId) return;
     setReportTarget(member);
     setReportModalOpen(true);

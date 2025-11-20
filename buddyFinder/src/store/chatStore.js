@@ -10,13 +10,10 @@ export const useChatStore = create((set, get) => ({
     const client = new Client({
       brokerURL: 'ws://localhost:8080/ws',
       reconnectDelay: 5000,
-      debug: (str) => {
-        console.log('STOMP: ' + str);
-      },
+      debug: () => {},
     });
 
     client.onConnect = () => {
-      console.log('✅ WebSocket Connected');
       set({ connected: true, stompClient: client });
 
       client.subscribe(`/topic/match/${matchId}`, (message) => {
@@ -35,9 +32,7 @@ export const useChatStore = create((set, get) => ({
       console.error('❌ STOMP error:', frame);
     };
 
-    client.onWebSocketClose = (evt) => {
-      console.log('WebSocket closed:', evt);
-    };
+    client.onWebSocketClose = () => {};
 
     client.activate();
   },

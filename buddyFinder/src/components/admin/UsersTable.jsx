@@ -55,37 +55,43 @@ const UsersTable = ({ users, refresh }) => {
         </thead>
         <tbody>
           {users.map((u) => {
-            console.log("User id:", u.userId);
+            const roleLabel = u.isSuperAdmin ? "Super Admin" : u.isAdmin ? "Admin" : "User";
             return (
               <tr key={u.userId} className="border-t dark:border-gray-700">
                 <td className="p-2">{u.name}</td>
                 <td>{u.email}</td>
                 <td>{u.isActive ? "Active" : "Banned"}</td>
-                <td>{u.isAdmin ? "Admin" : "User"}</td>
+                <td>{roleLabel}</td>
                 <td className="flex flex-col items-center gap-2 py-2 sm:flex-row sm:justify-center">
-                  {u.isActive ? (
+                  {u.isAdmin ? (
+                    <span className="text-xs font-semibold text-gray-400">
+                      Admin accounts are protected
+                    </span>
+                  ) : (
                     <>
+                      {u.isActive ? (
+                        <button
+                          onClick={() => handleBan(u.userId)}
+                          className="px-3 py-1 bg-red-500 text-white rounded"
+                        >
+                          Ban
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleUnban(u.userId)}
+                          className="px-3 py-1 bg-green-500 text-white rounded"
+                        >
+                          Unban
+                        </button>
+                      )}
                       <button
-                        onClick={() => handleBan(u.userId)}
-                        className="px-3 py-1 bg-red-500 text-white rounded"
+                        onClick={() => handleDelete(u.userId)}
+                        className="px-3 py-1 bg-gray-500 text-white rounded"
                       >
-                        Ban
+                        Delete
                       </button>
                     </>
-                  ) : (
-                    <button
-                      onClick={() => handleUnban(u.userId)}
-                      className="px-3 py-1 bg-green-500 text-white rounded"
-                    >
-                      Unban
-                    </button>
                   )}
-                  <button
-                    onClick={() => handleDelete(u.userId)}
-                    className="px-3 py-1 bg-gray-500 text-white rounded"
-                  >
-                    Delete
-                  </button>
                 </td>
               </tr>
             );

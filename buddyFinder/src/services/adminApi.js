@@ -200,6 +200,66 @@ export const rejectVerification = async (verificationId, adminNotes) => {
   }
 };
 
+// ============ SUPPORT REQUESTS ============
+export const getSupportRequests = async () => {
+  try {
+    const res = await api.get("/support");
+    return res.data;
+  } catch (error) {
+    handleAdminError(error, "fetching support requests");
+  }
+};
+
+export const updateSupportRequestStatus = async (requestId, payload) => {
+  try {
+    const res = await api.patch(`/support/${requestId}/status`, payload);
+    showSuccess("Support request updated");
+    return res.data;
+  } catch (error) {
+    handleAdminError(error, "updating support request");
+  }
+};
+
+// ============ ADMIN ACCOUNTS (SUPER ADMIN) ============
+export const getAdminAccounts = async () => {
+  try {
+    const res = await api.get("/admin/accounts");
+    return res.data;
+  } catch (error) {
+    handleAdminError(error, "fetching admin accounts");
+  }
+};
+
+export const createAdminAccount = async (payload) => {
+  try {
+    const res = await api.post("/admin/accounts", payload);
+    showSuccess("Admin account created");
+    return res.data;
+  } catch (error) {
+    handleAdminError(error, "creating admin account");
+  }
+};
+
+export const updateAdminAccountRole = async (userId, role) => {
+  try {
+    const res = await api.put(`/admin/accounts/${userId}/role`, { role });
+    showSuccess("Admin role updated");
+    return res.data;
+  } catch (error) {
+    handleAdminError(error, "updating admin role");
+  }
+};
+
+export const deleteAdminAccount = async (userId) => {
+  try {
+    const res = await api.delete(`/admin/accounts/${userId}`);
+    showSuccess("Admin account deleted");
+    return res.data;
+  } catch (error) {
+    handleAdminError(error, "deleting admin account");
+  }
+};
+
 // ============ ERROR HANDLER (CHỈ THAY ĐỔI TOAST) ============
 
 // Lưu lỗi gần nhất để chống hiển thị trùng

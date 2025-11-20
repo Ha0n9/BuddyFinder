@@ -78,7 +78,7 @@ function NotificationCenter() {
 
   const getNotificationIcon = (type) => {
     const icons = {
-      MATCH: '💕',
+      MATCH: '⚡️',
       MESSAGE: '💬',
       ACTIVITY: '🏃',
       RATING: '⭐',

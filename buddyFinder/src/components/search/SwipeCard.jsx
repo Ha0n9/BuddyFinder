@@ -1,6 +1,7 @@
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { Zap, X, MapPin, Dumbbell, User } from 'lucide-react';
 import { useState } from 'react';
+import { parsePhotos } from '../../utils/photoUtils';
 
 function SwipeCard({ user, onSwipe, style }) {
   const x = useMotionValue(0);
@@ -190,16 +191,5 @@ function SwipeCard({ user, onSwipe, style }) {
   );
 }
 
-// Helper: parse photos JSON safely
-function parsePhotos(photosJson) {
-  if (!photosJson || photosJson === 'null' || photosJson === '[]') return [];
-  try {
-    if (typeof photosJson === 'string') return JSON.parse(photosJson);
-    if (Array.isArray(photosJson)) return photosJson;
-    return [];
-  } catch {
-    return [];
-  }
-}
 
 export default SwipeCard;
