@@ -175,6 +175,8 @@ export async function getReferralInfo() {
   return res.json();
 }
 
+export const claimReferralReward = () => api.post('/referral/claim-reward');
+
 // ================== PROFILE MEDIA ==================
 export const uploadProfilePicture = (file) => {
   const formData = new FormData();

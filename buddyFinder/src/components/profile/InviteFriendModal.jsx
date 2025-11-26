@@ -1,10 +1,14 @@
 import { useState, useEffect } from "react";
-import { getReferralInfo } from "../../services/api";
 import { Copy } from "lucide-react";
+import { getReferralInfo, claimReferralReward } from "../../services/api";
+import { showError, showSuccess } from "../../utils/toast";
+import { useAuthStore } from "../../store/authStore";
 
 export default function InviteFriendModal({ isOpen, onClose }) {
   const [referral, setReferral] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [claiming, setClaiming] = useState(false);
+  const { user, setUser } = useAuthStore();
 
   useEffect(() => {
     if (isOpen) fetchReferral();
@@ -19,6 +23,24 @@ export default function InviteFriendModal({ isOpen, onClose }) {
       console.error("Failed to fetch referral info:", e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleClaimReward = async () => {
+    try {
+      setClaiming(true);
+      await claimReferralReward();
+      showSuccess("Premium reward activated! Enjoy your perks.");
+      if (user) {
+        setUser({ ...user, tier: "PREMIUM" });
+      }
+      await fetchReferral();
+    } catch (error) {
+      const message =
+        error.response?.data?.message || "Failed to claim reward. Please try again.";
+      showError(message);
+    } finally {
+      setClaiming(false);
     }
   };
 
@@ -40,9 +62,24 @@ export default function InviteFriendModal({ isOpen, onClose }) {
             {referral.featureLocked ? (
               <div className="mb-4 bg-green-500/10 border border-green-500/40 rounded-xl p-4 text-sm text-white">
                 <p className="font-semibold mb-1">Referral challenge completed 🎉</p>
-                <p className="text-gray-300">
-                  You've already invited 3 friends and unlocked the reward. This perk can only be used once.
-                </p>
+                {referral.rewardClaimed ? (
+                  <p className="text-gray-300">
+                    Your Premium reward has already been activated. Thanks for spreading the word!
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-gray-300 mb-3">
+                      You have three accepted invitations. Claim your free month of Premium to unlock all perks.
+                    </p>
+                    <button
+                      onClick={handleClaimReward}
+                      disabled={claiming}
+                      className="w-full py-2 bg-[#FF5F00] hover:bg-[#ff7133] disabled:opacity-60 disabled:cursor-not-allowed rounded-lg font-semibold"
+                    >
+                      {claiming ? "Activating..." : "Claim Premium Reward"}
+                    </button>
+                  </>
+                )}
               </div>
             ) : (
               <>
