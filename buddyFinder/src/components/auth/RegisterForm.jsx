@@ -79,7 +79,12 @@ function RegisterForm() {
       navigate('/search');
     } catch (error) {
       console.error('Registration failed:', error);
-      showError(error.response?.data?.message || 'Registration failed');
+      const serverErrors = error.response?.data?.errors;
+      const message =
+        serverErrors && typeof serverErrors === 'object'
+          ? Object.values(serverErrors).filter(Boolean).join(', ')
+          : error.response?.data?.message;
+      showError(message || 'Registration failed');
     } finally {
       setLoading(false);
     }

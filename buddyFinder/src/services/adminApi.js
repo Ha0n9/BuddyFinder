@@ -262,7 +262,7 @@ export const deleteAdminAccount = async (userId) => {
 
 // ============ ERROR HANDLER (ONLY CHANGE TOAST) ============
 
-// Lưu lỗi gần nhất để chống hiển thị trùng
+// Save the most recent error to prevent duplicate display
 let lastToastMessage = null;
 let lastToastTime = 0;
 
@@ -270,35 +270,35 @@ function handleAdminError(error, action) {
   const now = Date.now();
   const message = error.response?.data?.message || "";
 
-  // Chống hiển thị trùng trong vòng 1 giây
+  // Anti-duplicate display within 1 second
   if (message === lastToastMessage && now - lastToastTime < 1000) {
     return;
   }
   lastToastMessage = message;
   lastToastTime = now;
 
-  // Hiển thị lỗi theo từng trường hợp cụ thể
+  // Show errors on a case-by-case basis
   if (error.response?.status === 401) {
     showError("Session expired. Please log in again.");
     localStorage.removeItem("token");
     window.location.href = "/login";
   } else if (error.response?.status === 403) {
-    // Nếu chưa đăng nhập hoặc token trống → đừng hiện Access denied
+    // If not logged in or token is empty → do not show Access denied
     const token = localStorage.getItem("token");
     if (!token) return;
     showError("Access denied: Admin privileges required.");
   } else if (message.toLowerCase().includes("banned")) {
-    // User bị ban → hiện thông báo chính xác
+    // User is banned → show correct notification
     showError("Your account has been banned. Please contact support.");
   } else if (error.response?.data?.message) {
-    // Hiển thị lỗi kèm hành động
+    // Show errors with actions
     showError(`Error ${action}: ${error.response.data.message}`);
   } else {
-    // Lỗi không xác định
+    // Unknown error
     showError(`Unexpected error occurred while ${action}.`);
   }
 
-  // Log đầy đủ cho dev
+  // Full log for dev
   console.error(`❌ Admin API error while ${action}:`, error);
 }
 

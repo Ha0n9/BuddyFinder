@@ -67,8 +67,9 @@ function LoginForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-md mx-auto p-4 space-y-4">
       <div>
-        <label className="block text-gray-700">Email</label>
+        <label htmlFor="login-email" className="block text-gray-700">Email</label>
         <input
+          id="login-email"
           {...register('email')}
           className="w-full px-4 py-3 rounded-lg border border-[#2A2A2A]
              bg-[#141414] text-white placeholder-gray-500
@@ -81,8 +82,9 @@ function LoginForm() {
         )}
       </div>
       <div>
-        <label className="block text-gray-700">Password</label>
+        <label htmlFor="login-password" className="block text-gray-700">Password</label>
         <input
+          id="login-password"
           {...register('password')}
           className="w-full px-4 py-3 rounded-lg border border-[#2A2A2A]
              bg-[#141414] text-white placeholder-gray-500

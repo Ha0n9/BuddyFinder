@@ -11,4 +11,10 @@ export default defineConfig({
       global: 'globalThis',
     },
   },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: 'FrontendTest/test-setup.js',
+    include: ['FrontendTest/**/*.test.{js,jsx,ts,tsx}'],
+  },
 })
