@@ -260,7 +260,7 @@ export const deleteAdminAccount = async (userId) => {
   }
 };
 
-// ============ ERROR HANDLER (CHỈ THAY ĐỔI TOAST) ============
+// ============ ERROR HANDLER (ONLY CHANGE TOAST) ============
 
 // Lưu lỗi gần nhất để chống hiển thị trùng
 let lastToastMessage = null;
@@ -277,7 +277,7 @@ function handleAdminError(error, action) {
   lastToastMessage = message;
   lastToastTime = now;
 
-  // ✅ Hiển thị lỗi theo từng trường hợp cụ thể
+  // Hiển thị lỗi theo từng trường hợp cụ thể
   if (error.response?.status === 401) {
     showError("Session expired. Please log in again.");
     localStorage.removeItem("token");

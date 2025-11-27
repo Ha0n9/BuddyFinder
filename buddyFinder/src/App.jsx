@@ -21,6 +21,7 @@ import UserProfileView from './pages/UserProfileView';
 import RefundPage from './pages/RefundPage';
 import ReportsPage from './pages/ReportsPage';
 import ContactSupportPage from './pages/ContactSupportPage';
+import LikesPage from './pages/LikesPage';
 
 function App() {
   const { isAuthenticated, user, setUser, logout } = useAuthStore();
@@ -135,6 +136,12 @@ function App() {
         <Route path="/refund" element={
           <ProtectedRoute>
             <RefundPage />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/likes" element={
+          <ProtectedRoute>
+            <LikesPage />
           </ProtectedRoute>
         } />
 

@@ -51,6 +51,7 @@ function Navbar() {
             <>
               <NavItem to="/profile" label="Profile" />
               <NavItem to="/search" label="Search" />
+              {user?.tier === 'ELITE' && <NavItem to="/likes" label="Likes" />}
               <NavItem to="/activities" label="Activities" />
               <NavItem to="/chat" label="Chat" />
               <NavItem to="/rating" label="Rating" />

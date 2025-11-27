@@ -25,13 +25,13 @@ const ActivitiesTable = ({ activities, refresh }) => {
         </thead>
         <tbody>
           {activities.map((a) => (
-            <tr key={a.id /* or a.activityId depending your backend */} className="border-t dark:border-gray-700">
+            <tr key={a.activityId} className="border-t dark:border-gray-700">
               <td className="p-2">{a.title}</td>
               <td>{a.location}</td>
               <td>{a.creator?.name}</td>
               <td className="text-center">
                 <button
-                  onClick={() => handleDelete(a.id)}
+                  onClick={() => handleDelete(a.activityId)}
                   className="px-3 py-1 bg-gray-500 text-white rounded"
                 >
                   Delete

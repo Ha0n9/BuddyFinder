@@ -109,6 +109,8 @@ export const likeUser = (toUserId) => api.post('/matches/like', { toUserId });
 export const passUser = (toUserId) => api.post('/matches/pass', { toUserId });
 export const getMatches = () => api.get('/matches');
 
+export const getLikesReceived = () => api.get('/likes/received');
+
 // ================== ACTIVITIES ==================
 export const postActivity = (data) => api.post('/activities/create', data);
 export const getActivities = () => api.get('/activities');
